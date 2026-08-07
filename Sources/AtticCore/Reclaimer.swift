@@ -84,7 +84,10 @@ public struct Reclaimer: Sendable {
                 ageDays = ageInDays(ofPath: projectDir) ?? 0
             } else {
                 lockfilePresent = false
-                ageDays = 0
+                // **여기가 0이면 스캔이 올린 것을 실행이 거부한다.** 나이를 보는
+                // 종류(다운로드·스크린샷·보관본)가 전부 "최근에 썼다"로 막혔다.
+                // 못 재면 0으로 둔다 — 모르는 것은 손대지 않는 편이 맞다.
+                ageDays = FileAge.days(ofItemAt: item.path) ?? 0
             }
 
             if let refusal = guardian.check(

@@ -324,9 +324,7 @@ public struct ReclaimScanner: Sendable {
     /// 것만** 후보라 실제 나이가 필요하다 — 안 재면 가드가 항상 거부한다.
     private func ageDays(of path: String, kind: ReclaimKind) -> Int {
         guard kind == .xcodeArchive else { return 0 }
-        guard let modified = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
-        else { return 0 }
-        return max(0, Int(Date().timeIntervalSince(modified) / 86_400))
+        return FileAge.days(ofItemAt: path) ?? 0
     }
 
     private func passesGuard(_ path: String, kind: ReclaimKind,
@@ -515,13 +513,11 @@ public struct ReclaimScanner: Sendable {
         func attributes(_ path: String) -> (bytes: UInt64, ageDays: Int)? {
             guard let attrs = try? fm.attributesOfItem(atPath: path),
                   (attrs[.type] as? FileAttributeType) == .typeRegular,
-                  let size = attrs[.size] as? UInt64 else { return nil }
-            // 만든 날과 고친 날 중 **늦은** 쪽을 쓴다 — 최근에 손댄 것을 오래된
-            // 것으로 오판하지 않기 위함이다.
-            let dates = [attrs[.modificationDate] as? Date,
-                         attrs[.creationDate] as? Date].compactMap { $0 }
-            guard let latest = dates.max() else { return nil }
-            let days = max(0, Int(Date().timeIntervalSince(latest) / 86_400))
+                  let size = attrs[.size] as? UInt64,
+                  // 나이는 FileAge 한 곳에서만 잰다 — 실행 직전 재검증도 같은
+                  // 함수를 쓴다. 각자 재다가 어긋나서 "오래됐다고 올려놓고
+                  // 최근이라 거부하는" 상태가 됐던 적이 있다.
+                  let days = FileAge.daysOfFile(path) else { return nil }
             return (size, days)
         }
 
@@ -582,15 +578,12 @@ public struct ReclaimScanner: Sendable {
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
               isDirectory.boolValue else { return nil }
         var total: UInt64 = 0
-        var newest: Date?
-        var count = 0
-        let complete = DirectoryWalk.walk(root: path, maxDepth: 6, onFile: { _, bytes, at in
+        let complete = DirectoryWalk.walk(root: path, maxDepth: 6, onFile: { _, bytes, _ in
             total += bytes
-            count += 1
-            if newest == nil || at > newest! { newest = at }
         })
-        guard complete, count > 0, let newest else { return nil }
-        return (total, max(0, Int(Date().timeIntervalSince(newest) / 86_400)))
+        // 나이는 FileAge가 잰다(가장 최근 파일 기준) — 실행 직전 재검증과 같은 함수다.
+        guard complete, total > 0, let days = FileAge.daysOfFolder(path) else { return nil }
+        return (total, days)
     }
 
     /// 종류별 최소 크기. 1MB 미만 설치 파일은 화면에 "0"으로 뜨고(실측) 골라
