@@ -206,15 +206,19 @@ final class DiagnosticsModel {
         checkForUpdate()
     }
 
-    /// 하루 한 번만 확인한다. 팝오버를 열 때마다 GitHub에 요청하면 사용자가
-    /// 아무것도 얻지 못하면서 통신만 늘어난다.
-    private static let updateCheckInterval: TimeInterval = 24 * 3600
+    /// 팝오버를 열 때의 확인 간격. 하루로 두었더니 릴리스 **직전**에 확인이 돌면
+    /// 사용자가 최대 24시간 새 버전을 몰랐다(실제로 그랬다). 6시간으로 줄이고,
+    /// 실행할 때는 간격과 무관하게 한 번 확인한다.
+    private static let updateCheckInterval: TimeInterval = 6 * 3600
 
-    private func checkForUpdate() {
+    /// 사용자가 직접 누르는 확인. 간격을 무시한다 — 기다릴 이유가 없다.
+    func checkForUpdateNow() { checkForUpdate(force: true) }
+
+    private func checkForUpdate(force: Bool = false) {
         guard (UserDefaults.standard.object(forKey: "updateCheckEnabled") as? Bool) ?? true
         else { return }
         let last = UserDefaults.standard.object(forKey: "updateCheckedAt") as? Date
-        if let last, Date().timeIntervalSince(last) < Self.updateCheckInterval,
+        if !force, let last, Date().timeIntervalSince(last) < Self.updateCheckInterval,
            availableUpdate == nil { return }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
             as? String ?? "0"

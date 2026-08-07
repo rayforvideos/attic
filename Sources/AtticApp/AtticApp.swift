@@ -52,6 +52,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppLanguage.restoreOnLaunch()
             Self.applyDockVisibility()
             DiagnosticsModel.shared.startSampling()
+            // 실행할 때는 간격과 무관하게 확인한다. 팝오버 열 때만 확인하면
+            // 릴리스 직전에 확인이 돌았을 때 다음 확인까지 오래 기다린다.
+            DiagnosticsModel.shared.checkForUpdateNow()
             // 첫 실행이면 팝오버를 한 번 열어 준다 — 메뉴바 전용 앱이라 아무
             // 안내 없이 작은 아이콘만 생기면 실행된 줄도 모른다(검수에서 확인).
             if !UserDefaults.standard.bool(forKey: "hasLaunchedBefore") {

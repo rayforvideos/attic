@@ -100,7 +100,16 @@ struct SettingsView: View {
                         updateCheckEnabled = value
                         UserDefaults.standard.set(value, forKey: "updateCheckEnabled")
                     }))
-                Text("이 앱이 통신하는 유일한 곳이에요 · 하루 한 번 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요")
+                HStack(spacing: 8) {
+                    Button(L("지금 확인")) { DiagnosticsModel.shared.checkForUpdateNow() }
+                        .controlSize(.small)
+                    if let update = DiagnosticsModel.shared.availableUpdate {
+                        Text(L("새 버전 %@이 있어요", update.version))
+                            .font(.system(size: 10.5)).foregroundStyle(Palette.apps)
+                    }
+                    Spacer(minLength: 0)
+                }
+                Text("이 앱이 통신하는 유일한 곳이에요 · 실행할 때와 여섯 시간마다 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요")
                     .font(.system(size: 10)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             Toggle("스캔이 끝나면 소리로 알리기", isOn: Binding(
