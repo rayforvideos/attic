@@ -68,10 +68,6 @@ struct PopoverView: View {
             trash: model.trash,
             isEmptyingTrash: model.isEmptyingTrash,
             onEmptyTrash: { Task { await model.emptyTrash() } },
-            onOpenSettings: {
-                NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
-                AppDelegate.openSettings()
-            },
             onQuit: { NSApp.terminate(nil) },
             onAppearLive: { model.startLiveRefresh() },
             onDisappearLive: { model.stopLiveRefresh(); reapNote = nil }
@@ -118,7 +114,6 @@ struct PopoverBody: View {
     let trash: TrashContents?
     let isEmptyingTrash: Bool
     let onEmptyTrash: () -> Void
-    let onOpenSettings: () -> Void
     let onQuit: () -> Void
     let onAppearLive: () -> Void
     let onDisappearLive: () -> Void
@@ -219,12 +214,19 @@ struct PopoverBody: View {
                     .help("알림이 꺼져 있어요 — 메뉴바 아이콘으로만 알려줍니다")
             }
             Spacer()
-            Button { onOpenSettings() } label: {
+            // SettingsLink는 SwiftUI가 Settings scene을 여는 정식 방법이다.
+            // sendAction(showSettingsWindow:)으로 바꿨더니 여기서도 안 열렸다 —
+            // 그 액션은 앱 메뉴가 있을 때(도커에 표시하는 경우)만 responder
+            // 체인에 걸린다. 뷰 안에서는 이걸 쓰는 것이 맞다.
+            SettingsLink {
                 Image(systemName: "gearshape").font(.system(size: 11))
             }
             .buttonStyle(.borderless)
             .help("설정")
             .accessibilityLabel("설정")
+            .simultaneousGesture(TapGesture().onEnded {
+                NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 뒤에 뜬다
+            })
             Button { onQuit() } label: {
                 Image(systemName: "power").font(.system(size: 11))
             }
