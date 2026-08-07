@@ -79,15 +79,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 도커 아이콘 우클릭 메뉴 — 도커에 표시하는 설정을 켰을 때만 나타난다.
     ///
-    /// 문구는 **앱의 언어 설정**을 따른다(사용자 요청: 설정 언어와 맞춰야 한다).
-    /// macOS가 이 아래에 붙이는 항목(옵션·Finder에서 보기·종료)은 시스템 언어를
-    /// 쓰므로 두 언어가 섞일 수 있는데, 그건 앱이 정할 수 없는 부분이다.
+    /// 문구는 **시스템 언어**로 만든다(SystemLanguage). 이 메뉴의 절반은 macOS
+    /// Dock이 그리고 항상 시스템 언어라, 우리 항목만 앱 언어를 따르면 한 메뉴에
+    /// 두 언어가 섞인다 — 손댈 수 있는 쪽을 맞추는 것이 유일한 해결이다.
     ///
     /// 종료는 넣지 않는다: macOS가 이미 붙여준다. 직접 넣으면 두 개가 된다.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
-        for (title, action) in [(L("설정…"), #selector(openSettingsFromDock)),
-                                (L("찾아보기"), #selector(scanFromDock))] {
+        for (title, action) in [(SystemLanguage.text("설정…"), #selector(openSettingsFromDock)),
+                                (SystemLanguage.text("찾아보기"), #selector(scanFromDock))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
             item.target = self
             menu.addItem(item)
