@@ -350,6 +350,10 @@ public struct ReclaimScanner: Sendable {
     /// 테이블을 (부분적으로) 공유한다 — du가 아직 돌고 있어 바이트를 모르는
     /// 시점에도 "지금 뭘 재는지"는 경로가 아니라 사람 말로 보여줘야 한다.
     private func humanName(forCacheRoot path: String) -> String {
+        Self.name(forCacheRoot: path)
+    }
+
+    static func name(forCacheRoot path: String) -> String {
         // 표에는 한국어 원문(= 번역 키)을 두고, 꺼낼 때 기기 언어로 옮긴다.
         for (suffix, name) in Self.knownCacheNames where path.hasSuffix(suffix) {
             return L(name)
@@ -663,13 +667,17 @@ public struct ReclaimScanner: Sendable {
     /// 화면 이름. 번들 ID(`com.kakao.KakaoTalkMac`)는 사람이 읽기 어려우니 앱
     /// 이름으로 바꾼다 — 알려진 이름 표가 있으면 그것을, 없으면 마지막 조각을 쓴다.
     private func humanName(forLibraryCache path: String) -> String {
+        Self.name(forLibraryCache: path, home: home)
+    }
+
+    static func name(forLibraryCache path: String, home: String) -> String {
         let containers = "\(home)/Library/Containers/"
         if path.hasPrefix(containers) {
             let bundleID = path.dropFirst(containers.count).split(separator: "/").first.map(String.init) ?? ""
             let readable = bundleID.split(separator: ".").last.map(String.init) ?? bundleID
             return L("%@ (앱 캐시)", readable)
         }
-        return humanName(forCacheRoot: path)
+        return name(forCacheRoot: path)
     }
 
     /// Application Support 아래 Chromium 캐시 폴더를 찾는다. 앱 이름을 미리 알 수
@@ -702,6 +710,10 @@ public struct ReclaimScanner: Sendable {
     /// 화면 이름: "앱 이름 (캐시 종류)". 앱 이름 없이 "Cache"만 뜨면 어느 앱
     /// 것인지 알 수 없다.
     private func humanName(forElectronCache path: String) -> String {
+        Self.name(forElectronCache: path, home: home)
+    }
+
+    static func name(forElectronCache path: String, home: String) -> String {
         let support = "\(home)/Library/Application Support/"
         let relative = path.hasPrefix(support) ? String(path.dropFirst(support.count)) : path
         let parts = relative.split(separator: "/").map(String.init)
@@ -736,6 +748,24 @@ public struct ReclaimScanner: Sendable {
     /// 문구를 고르는 데만 쓴다 — 후보 판정에는 쓰지 않는다(확장자로 가리지 않는다).
     /// 설치 파일은 만든 곳에서 다시 받을 수 있고, 나머지는 그렇지 않다.
     static let installerExtensions: Set<String> = ["dmg", "pkg", "iso", "xip"]
+
+    /// 화면에 쓸 이름을 **그릴 때** 만든다.
+    ///
+    /// 저장된 `displayName`을 믿으면 안 된다: 스캔한 순간의 언어로 굳어 있어서
+    /// 언어를 바꿔도 "Yarn (앱 캐시)"만 한국어로 남는다(사용자 신고). 종류와
+    /// 경로만 있으면 언제든 다시 만들 수 있다.
+    public static func displayName(for kind: ReclaimKind, path: String,
+                                   fallback: String,
+                                   home: String = NSHomeDirectory()) -> String {
+        switch kind {
+        case .libraryCache: name(forLibraryCache: path, home: home)
+        case .electronCache: name(forElectronCache: path, home: home)
+        case .buildCache, .deviceSupport, .packageCache, .appCache:
+            name(forCacheRoot: path)
+        // node_modules·사용자 파일은 경로에서 바로 만든 이름이라 번역이 없다.
+        case .nodeModules, .staleInstaller, .oldScreenshot, .largeFile: fallback
+        }
+    }
 
     public static func note(for kind: ReclaimKind, path: String) -> String {
         // ~/Library/Logs는 다른 캐시와 성격이 다르다 — "문제가 생겼을 때 보려던

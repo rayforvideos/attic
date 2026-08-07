@@ -494,7 +494,10 @@ struct SpacePane: View {
         for (suffix, name) in Self.knownNames where item.path.hasSuffix(suffix) {
             return name
         }
-        return item.displayName
+        // 저장된 displayName은 스캔한 순간의 언어로 굳어 있다 — 종류·경로로
+        // 다시 만든다(언어를 바꾸면 "Yarn (앱 캐시)"만 한국어로 남았다).
+        return ReclaimScanner.displayName(for: item.kind, path: item.path,
+                                          fallback: item.displayName)
     }
 
     private static let knownNames: [(String, String)] = [
@@ -524,9 +527,14 @@ struct SpacePane: View {
     ]
 
     private func subtitle(for item: ReclaimItem) -> String {
+        // **저장된 item.note를 쓰지 않는다.** 그 문자열은 스캔한 순간의 언어로
+        // 굳어 있어서, 언어를 바꿔도 "다음 빌드 때 다시 만들어져요"가 한국어로
+        // 남는다(사용자 신고). 종류와 경로만 있으면 언제든 다시 만들 수 있으므로
+        // 그릴 때 만든다 — 문구를 고쳐도 옛 결과가 옛말을 하지 않는 효과도 있다.
+        let note = ReclaimScanner.note(for: item.kind, path: item.path)
         let sentence = item.lastUsedDays.map {
-            L("%@ · %lld일째 그대로", item.note, Int64($0))
-        } ?? item.note
+            L("%@ · %lld일째 그대로", note, Int64($0))
+        } ?? note
         // 되돌릴 수 없는 종류에는 **어느 폴더에 있는지**를 함께 보여준다.
         // 파일명만 보이면 같은 이름의 다른 파일을 구별할 수 없다 — 이 맥에서
         // 연말정산 증빙 스크린샷과 그냥 스크린샷이 화면에서 똑같이 보였다.

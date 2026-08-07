@@ -715,3 +715,29 @@ struct ItemNoteHonestyTests {
         }
     }
 }
+
+@Suite("화면 문구는 그릴 때 만든다")
+struct RenderTimeTextTests {
+    /// 저장된 문자열을 믿으면 언어를 바꿨을 때 그 줄만 옛 언어로 남는다.
+    /// 종류와 경로만으로 이름·설명을 다시 만들 수 있어야 한다.
+    @Test func rebuildsNameFromKindAndPath() {
+        let home = "/Users/tester"
+        #expect(ReclaimScanner.displayName(
+            for: .libraryCache,
+            path: "\(home)/Library/Containers/com.kakao.KakaoTalkMac/Data/Library/Caches",
+            fallback: "굳은 값", home: home).contains("KakaoTalkMac"))
+        #expect(ReclaimScanner.displayName(
+            for: .electronCache,
+            path: "\(home)/Library/Application Support/Notion/Cache",
+            fallback: "굳은 값", home: home) == "Notion (Cache)")
+        // 번역이 없는 종류는 저장된 이름을 그대로 쓴다(경로에서 만든 파일명이다)
+        #expect(ReclaimScanner.displayName(for: .oldScreenshot, path: "\(home)/a.png",
+                                           fallback: "a.png", home: home) == "a.png")
+    }
+
+    /// 설명도 같은 성질을 지켜야 한다 — 저장 없이 종류·경로에서 나온다.
+    @Test func rebuildsNoteFromKindAndPath() {
+        #expect(!ReclaimScanner.note(for: .buildCache, path: "/x").isEmpty)
+        #expect(!ReclaimScanner.note(for: .electronCache, path: "/x").isEmpty)
+    }
+}

@@ -121,14 +121,9 @@ final class DiagnosticsModel {
         // 매번 다시 훑지 않게, 지난 스캔 결과를 그대로 먼저 보여준다. 휴지통 이동은
         // 실행 직전 ReclaimGuard가 재검증하므로 결과가 오래돼도 안전하다.
         if let record = spaceStore.load() {
-            // 저장된 항목의 안내 문구를 현재 규칙으로 다시 만든다 — 안 그러면
-            // 문구를 고쳐도 지난 스캔 결과가 옛말을 그대로 보여준다.
-            spaceItems = record.items.map { item in
-                ReclaimItem(path: item.path, kind: item.kind,
-                            displayName: item.displayName, bytes: item.bytes,
-                            lastUsedDays: item.lastUsedDays,
-                            note: ReclaimScanner.note(for: item.kind, path: item.path))
-            }
+            // 문구를 다시 만들어 넣지 않는다 — 화면이 그릴 때 종류·경로로 직접
+            // 만든다(언어를 바꿔도 따라오고, 문구를 고쳐도 옛말이 남지 않는다).
+            spaceItems = record.items
             // 색인 개수는 조회해야 아는 값이라 저장하지 않는다 — 팝오버를 열면
             // 다시 조회한다(0.37초라 기다릴 일이 없다).
             spaceScanCompletedAt = record.completedAt
