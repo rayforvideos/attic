@@ -72,34 +72,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(show ? .regular : .accessory)
     }
 
-    /// 도커 아이콘 우클릭 메뉴. 도커에 표시하는 설정을 켰을 때만 나타난다
-    /// (숨김 상태에서는 도커 타일이 없어 이 메서드가 불리지 않는다).
-    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
-        let menu = NSMenu()
-        let open = NSMenuItem(title: L("열기"), action: #selector(openFromDock), keyEquivalent: "")
-        open.target = self
-        menu.addItem(open)
-        let scan = NSMenuItem(title: L("찾아보기"), action: #selector(scanFromDock), keyEquivalent: "")
-        scan.target = self
-        menu.addItem(scan)
-        // 종료는 macOS가 자동으로 붙이지만, 순서를 우리가 정하려면 직접 넣는다.
-        menu.addItem(.separator())
-        let quit = NSMenuItem(title: L("종료"), action: #selector(NSApplication.terminate(_:)),
-                              keyEquivalent: "")
-        menu.addItem(quit)
-        return menu
-    }
-
-    @objc private func openFromDock() {
-        MainActor.assumeIsolated { Self.openMenuBarPopover() }
-    }
-
-    @objc private func scanFromDock() {
-        MainActor.assumeIsolated {
-            Self.openMenuBarPopover()
-            Task { await DiagnosticsModel.shared.scanSpace() }
-        }
-    }
+    // 도커 메뉴는 만들지 않는다.
+    //
+    // 직접 항목을 넣어봤더니 메뉴에 두 언어가 섞였다: macOS가 자동으로 붙이는
+    // 항목(옵션·Finder에서 보기·종료)은 **시스템 언어**를 쓰는데, 앱이 넣은
+    // 항목은 앱의 언어 설정을 따르기 때문이다. 종료도 두 개가 됐다.
+    //
+    // 도커 메뉴는 시스템 UI다 — macOS가 주는 그대로 두는 것이 맞다. 종료는
+    // 거기 이미 있고(도커에 표시하는 설정을 켜면), 아이콘을 그냥 클릭하면
+    // 팝오버가 열린다(applicationShouldHandleReopen). 우리가 더할 것이 없다.
 
     /// Finder·Launchpad에서 이미 실행 중인 앱을 다시 열면 아무 일도 안 일어나
     /// 고장처럼 보인다 — 재열기 신호를 받아 팝오버를 연다.
