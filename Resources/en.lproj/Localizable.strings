@@ -221,3 +221,4 @@
 "접기" = "Hide";
 "도커에 아이콘 보이기" = "Show icon in the Dock";
 "메뉴바 전용이라 기본은 숨김이에요 · 보이게 하면 도커 아이콘을 우클릭해 종료할 수 있어요" = "Hidden by default since this lives in the menu bar · show it and you can right-click the Dock icon to quit";
+"설정…" = "Settings…";

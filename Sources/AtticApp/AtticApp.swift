@@ -72,15 +72,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(show ? .regular : .accessory)
     }
 
-    // 도커 메뉴는 만들지 않는다.
-    //
-    // 직접 항목을 넣어봤더니 메뉴에 두 언어가 섞였다: macOS가 자동으로 붙이는
-    // 항목(옵션·Finder에서 보기·종료)은 **시스템 언어**를 쓰는데, 앱이 넣은
-    // 항목은 앱의 언어 설정을 따르기 때문이다. 종료도 두 개가 됐다.
-    //
-    // 도커 메뉴는 시스템 UI다 — macOS가 주는 그대로 두는 것이 맞다. 종료는
-    // 거기 이미 있고(도커에 표시하는 설정을 켜면), 아이콘을 그냥 클릭하면
-    // 팝오버가 열린다(applicationShouldHandleReopen). 우리가 더할 것이 없다.
+    /// 도커 아이콘 우클릭 메뉴 — 도커에 표시하는 설정을 켰을 때만 나타난다.
+    ///
+    /// **문구는 시스템 언어로 만든다**(SystemLanguage). macOS가 이 아래에 붙이는
+    /// 항목(옵션·Finder에서 보기·종료)이 시스템 언어이므로, 앱 언어 설정을
+    /// 따르면 한 메뉴에 두 언어가 섞인다 — 실제로 그렇게 보였다.
+    ///
+    /// 종료는 넣지 않는다: macOS가 이미 붙여준다. 직접 넣으면 두 개가 된다.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        for (title, action) in [(SystemLanguage.text("설정…"), #selector(openSettingsFromDock)),
+                                (SystemLanguage.text("찾아보기"), #selector(scanFromDock))] {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    @objc private func openSettingsFromDock() {
+        MainActor.assumeIsolated {
+            NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
+            // SwiftUI의 Settings scene이 아니라 우리가 만든 Window라 id로 연다.
+            Self.openSettingsAction?()
+        }
+    }
+
+    @objc private func scanFromDock() {
+        MainActor.assumeIsolated {
+            Self.openMenuBarPopover()
+            Task { await DiagnosticsModel.shared.scanSpace() }
+        }
+    }
+
+    /// 설정 창을 여는 방법은 SwiftUI가 환경으로만 준다(openWindow) — 팝오버가
+    /// 시작할 때 여기에 넘겨준다. AppKit 쪽(도커 메뉴)에서 부를 길이 그것뿐이다.
+    @MainActor static var openSettingsAction: (() -> Void)?
 
     /// Finder·Launchpad에서 이미 실행 중인 앱을 다시 열면 아무 일도 안 일어나
     /// 고장처럼 보인다 — 재열기 신호를 받아 팝오버를 연다.
