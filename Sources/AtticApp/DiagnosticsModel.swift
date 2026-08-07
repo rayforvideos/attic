@@ -31,6 +31,8 @@ final class DiagnosticsModel {
     /// 그 뒤로는 방해하지 않는다(재설치해도 결과가 남아 있으면 첫 실행이 아니다).
     private(set) var hasEverScanned =
         UserDefaults.standard.bool(forKey: "hasEverScanned")
+    /// 새 버전이 나왔으면 그 정보. 알려주기만 하고 내려받지는 않는다.
+    private(set) var availableUpdate: AvailableUpdate?
     private(set) var trash: TrashContents?
     private(set) var isEmptyingTrash = false
     /// 스캔 도중의 정직한 진행 상황. 무한 스피너 대신 몇 개 중 몇 개째, 지금 뭘 재는지를
@@ -198,6 +200,26 @@ final class DiagnosticsModel {
         Task { [weak self] in await self?.sampleOnce() }
         refreshTrash()
         hasFullDiskAccess = FullDiskAccess.isGranted
+        checkForUpdate()
+    }
+
+    /// 하루 한 번만 확인한다. 팝오버를 열 때마다 GitHub에 요청하면 사용자가
+    /// 아무것도 얻지 못하면서 통신만 늘어난다.
+    private static let updateCheckInterval: TimeInterval = 24 * 3600
+
+    private func checkForUpdate() {
+        guard (UserDefaults.standard.object(forKey: "updateCheckEnabled") as? Bool) ?? true
+        else { return }
+        let last = UserDefaults.standard.object(forKey: "updateCheckedAt") as? Date
+        if let last, Date().timeIntervalSince(last) < Self.updateCheckInterval,
+           availableUpdate == nil { return }
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
+            as? String ?? "0"
+        Task { [weak self] in
+            let found = await UpdateChecker(currentVersion: version).check()
+            UserDefaults.standard.set(Date(), forKey: "updateCheckedAt")
+            self?.availableUpdate = found
+        }
     }
 
     /// 사용자가 시스템 설정에서 방금 허용했는지 다시 본다.

@@ -225,3 +225,7 @@
 "배포용 보관본이에요 · 지우면 그 빌드의 크래시 로그를 해석할 수 없어요" = "A release archive · deleting it means crash logs from that build can no longer be symbolized";
 "아직 반영되지 않았어요 · 앱을 다시 시작하면 적용돼요" = "Not in effect yet · restarting the app applies it";
 "다시 시작" = "Restart";
+"새 버전 %@" = "Version %@ available";
+"받는 곳을 열어요" = "Opens the download page";
+"새 버전이 나오면 알려주기" = "Tell me when a new version is out";
+"이 앱이 통신하는 유일한 곳이에요 · 하루 한 번 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요" = "The only network access this app makes · once a day it reads the latest version number from GitHub, and sends nothing about you or what it found";

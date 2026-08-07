@@ -34,6 +34,8 @@ struct SettingsView: View {
     @State private var includeUserFiles =
         (UserDefaults.standard.object(forKey: "includeUserFiles") as? Bool) ?? true
     @State private var hasFullDiskAccess = FullDiskAccess.isGranted
+    @State private var updateCheckEnabled =
+        (UserDefaults.standard.object(forKey: "updateCheckEnabled") as? Bool) ?? true
     @State private var showInDock =
         UserDefaults.standard.bool(forKey: AppDelegate.showInDockKey)
 
@@ -92,6 +94,15 @@ struct SettingsView: View {
             }
             }
             Section("알림") {
+                Toggle("새 버전이 나오면 알려주기", isOn: Binding(
+                    get: { updateCheckEnabled },
+                    set: { value in
+                        updateCheckEnabled = value
+                        UserDefaults.standard.set(value, forKey: "updateCheckEnabled")
+                    }))
+                Text("이 앱이 통신하는 유일한 곳이에요 · 하루 한 번 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요")
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             Toggle("스캔이 끝나면 소리로 알리기", isOn: Binding(
                 get: { spaceScanSound },
                 set: { on in

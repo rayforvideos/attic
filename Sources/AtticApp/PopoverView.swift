@@ -65,6 +65,7 @@ struct PopoverView: View {
             hasFullDiskAccess: model.hasFullDiskAccess,
             isFirstRun: !model.hasEverScanned,
             onRecheckAccess: { model.recheckFullDiskAccess() },
+            availableUpdate: model.availableUpdate,
             trash: model.trash,
             isEmptyingTrash: model.isEmptyingTrash,
             onEmptyTrash: { Task { await model.emptyTrash() } },
@@ -111,6 +112,7 @@ struct PopoverBody: View {
     let hasFullDiskAccess: Bool
     let isFirstRun: Bool
     let onRecheckAccess: () -> Void
+    var availableUpdate: AvailableUpdate?
     let trash: TrashContents?
     let isEmptyingTrash: Bool
     let onEmptyTrash: () -> Void
@@ -209,6 +211,22 @@ struct PopoverBody: View {
 
     private var footer: some View {
         HStack(spacing: 5) {
+            // 새 버전은 조용히 한 줄로만 알린다 — 지금 하려는 일(공간 정리)을
+            // 가리지 않는 자리다.
+            if let availableUpdate {
+                Button {
+                    NSWorkspace.shared.open(availableUpdate.pageURL)
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.down.circle.fill").font(.system(size: 10))
+                        Text(L("새 버전 %@", availableUpdate.version))
+                            .font(.system(size: 10.5, weight: .medium))
+                    }
+                    .foregroundStyle(Palette.apps)
+                }
+                .buttonStyle(.borderless)
+                .help("받는 곳을 열어요")
+            }
             if notificationsUnavailable {
                 Image(systemName: "bell.slash")
                     .help("알림이 꺼져 있어요 — 메뉴바 아이콘으로만 알려줍니다")
