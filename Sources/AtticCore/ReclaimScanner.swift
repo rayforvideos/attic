@@ -439,7 +439,9 @@ public struct ReclaimScanner: Sendable {
             kind: kind,
             displayName: displayName(for: path, kind: kind),
             bytes: bytes,
-            lastUsedDays: nil,
+            // 캐시는 나이가 판단 근거가 아니지만 보관본은 **오래된 것만** 후보다 —
+            // 화면이 그 근거를 보여줄 수 있게 나이를 담는다.
+            lastUsedDays: kind == .xcodeArchive ? ageDays(of: path, kind: kind) : nil,
             note: Self.note(for: kind, path: path)
         ))
     }
@@ -790,8 +792,8 @@ public struct ReclaimScanner: Sendable {
         case .electronCache: name(forElectronCache: path, home: home)
         case .buildCache, .deviceSupport, .packageCache, .appCache:
             name(forCacheRoot: path)
-        // 보관본은 파일명이 곧 빌드 이름이다 — 번역할 것이 없다.
-        case .xcodeArchive: fallback
+        // 보관본은 파일명이 곧 빌드 이름이다 — 확장자는 군더더기라 뗀다.
+        case .xcodeArchive: (fallback as NSString).deletingPathExtension
         // node_modules·사용자 파일은 경로에서 바로 만든 이름이라 번역이 없다.
         case .nodeModules, .staleInstaller, .oldScreenshot, .largeFile: fallback
         }
