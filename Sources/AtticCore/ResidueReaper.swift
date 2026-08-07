@@ -6,6 +6,8 @@ public enum ReapResult: Sendable, Equatable {
     case killed            // SIGKILL까지 감
     case alreadyGone       // 시그널 전에 이미 죽어 있었음
     case identityMismatch  // pid 재사용 감지 — 아무것도 하지 않음
+    /// 신호를 보낼 수 없는 대상(pid <= 0). 거부하고 아무것도 하지 않는다.
+    case refused
 }
 
 public struct ResidueReaper: Sendable {
@@ -18,7 +20,14 @@ public struct ResidueReaper: Sendable {
 
     public func reap(_ target: ProcIdentity,
                      gracePeriod: Duration = .seconds(3)) async -> ReapResult {
-        precondition(target.pid > 0, "kill(0)/kill(-1) 방어")
+        // kill(0, …)은 프로세스 그룹 전체를, kill(-1, …)은 이 사용자의 모든
+        // 프로세스를 죽인다 — 절대 통과시키면 안 되는 값이다.
+        //
+        // 예전에는 precondition이었는데, 그건 릴리스에서도 **앱을 죽인다**.
+        // 지금은 allPids()가 pid > 0을 이미 거르지만, reap()은 공개 API라
+        // 다른 호출자가 생기면 방어가 크래시가 된다. 거부하고 살아 있는 편이
+        // 언제나 낫다 — 안전 성질은 그대로 지켜진다.
+        guard target.pid > 0 else { return .refused }
 
         // 1) SIGTERM 직전 재검증
         guard let current = identityOf(target.pid) else { return .alreadyGone }

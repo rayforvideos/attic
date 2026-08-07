@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import os
 @testable import AtticCore
 
 @Suite("ResidueReaper", .serialized)   // 자식 프로세스를 다루므로 직렬 실행
@@ -56,5 +57,24 @@ struct ResidueReaperTests {
         let result = await ResidueReaper().reap(target)
         // 프로세스가 완전히 reap되었으므로 .alreadyGone이 정상 결과
         #expect(result == .alreadyGone || result == .identityMismatch || result == .terminated)
+    }
+}
+
+@Suite("ResidueReaper — 신호 대상 방어")
+struct ReaperTargetGuardTests {
+    /// kill(0, …)은 프로세스 그룹 전체를, kill(-1, …)은 이 사용자의 모든
+    /// 프로세스를 죽인다. 그 값이 들어오면 **거부하되 앱은 살아 있어야** 한다
+    /// (예전에는 precondition이라 릴리스에서도 앱이 죽었다).
+    @Test(arguments: [pid_t(0), pid_t(-1), pid_t(-999)])
+    func refusesNonPositivePidWithoutSignalling(_ pid: pid_t) async {
+        // 방어를 지나쳤는지 보려면 조회가 불렸는지만 알면 된다.
+        let lookups = OSAllocatedUnfairLock(initialState: 0)
+        let reaper = ResidueReaper(identityOf: { _ in
+            lookups.withLock { $0 += 1 }
+            return nil
+        })
+        let target = ProcIdentity(pid: pid, startSec: 1, startUsec: 0)
+        #expect(await reaper.reap(target) == .refused)
+        #expect(lookups.withLock { $0 } == 0, "거부 대상은 조회조차 하지 않아야 한다")
     }
 }
