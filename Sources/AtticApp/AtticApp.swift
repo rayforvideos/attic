@@ -1,6 +1,9 @@
 import SwiftUI
 import AppKit
 import AtticCore
+import os
+
+private let logger = os.Logger(subsystem: "com.sangjunpark.attic", category: "app")
 
 @main
 struct AtticApp: App {
@@ -76,15 +79,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 도커 아이콘 우클릭 메뉴 — 도커에 표시하는 설정을 켰을 때만 나타난다.
     ///
-    /// **문구는 시스템 언어로 만든다**(SystemLanguage). macOS가 이 아래에 붙이는
-    /// 항목(옵션·Finder에서 보기·종료)이 시스템 언어이므로, 앱 언어 설정을
-    /// 따르면 한 메뉴에 두 언어가 섞인다 — 실제로 그렇게 보였다.
+    /// 문구는 **앱의 언어 설정**을 따른다(사용자 요청: 설정 언어와 맞춰야 한다).
+    /// macOS가 이 아래에 붙이는 항목(옵션·Finder에서 보기·종료)은 시스템 언어를
+    /// 쓰므로 두 언어가 섞일 수 있는데, 그건 앱이 정할 수 없는 부분이다.
     ///
     /// 종료는 넣지 않는다: macOS가 이미 붙여준다. 직접 넣으면 두 개가 된다.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
-        for (title, action) in [(SystemLanguage.text("설정…"), #selector(openSettingsFromDock)),
-                                (SystemLanguage.text("찾아보기"), #selector(scanFromDock))] {
+        for (title, action) in [(L("설정…"), #selector(openSettingsFromDock)),
+                                (L("찾아보기"), #selector(scanFromDock))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
             item.target = self
             menu.addItem(item)
@@ -96,12 +99,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated { AppDelegate.openSettings() }
     }
 
-    /// 설정 창을 연다. Settings scene의 표준 액션이라 팝오버가 떠 있지 않아도,
-    /// 도커 메뉴에서 불려도 동작한다 — 예전에는 팝오버를 한 번도 열지 않았으면
-    /// 설정이 아예 열리지 않았다(SwiftUI의 openWindow는 뷰 안에서만 부를 수 있다).
+    /// 설정 창을 연다.
+    ///
+    /// `sendAction(..., to: nil)`은 도커 메뉴에서 동작하지 않았다(사용자 확인) —
+    /// responder 체인에 받는 곳이 없다. 앱 메뉴에 있는 항목은 눌리면 확실히
+    /// 열리므로(확인함), **그 항목의 target/action을 그대로 실행한다**.
     @MainActor static func openSettings() {
         NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        let selector = Selector(("showSettingsWindow:"))
+        if let item = NSApp.mainMenu?.items.compactMap(\.submenu)
+            .flatMap(\.items).first(where: { $0.action == selector }) {
+            let handled = NSApp.sendAction(selector, to: item.target, from: item)
+            logger.info("dock settings via menu item, handled=\(handled, privacy: .public)")
+            if handled { return }
+        }
+        let handled = NSApp.sendAction(selector, to: nil, from: nil)
+        logger.info("dock settings via responder chain, handled=\(handled, privacy: .public)")
     }
 
     @objc private func scanFromDock() {
