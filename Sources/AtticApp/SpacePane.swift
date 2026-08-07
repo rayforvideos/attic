@@ -457,7 +457,8 @@ struct SpacePane: View {
         let isOn = selected.contains(item.id)
         return MetricRow(symbol: symbol(for: item.kind), symbolTint: tint(for: item.kind),
                          title: L(displayName(for: item)), subtitle: subtitle(for: item),
-                         value: SizeText.compact(item.bytes), subtitleLines: 2) {
+                         value: SizeText.compact(item.bytes),
+                         subtitleLines: Self.userFileKinds.contains(item.kind) ? 3 : 2) {
             Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 15, weight: isOn ? .regular : .medium))
                 .foregroundStyle(isOn ? Palette.apps : Palette.muted)
@@ -514,10 +515,14 @@ struct SpacePane: View {
     ]
 
     private func subtitle(for item: ReclaimItem) -> String {
-        if let days = item.lastUsedDays {
-            return L("%@ · %lld일째 그대로", item.note, days)
-        }
-        return item.note
+        let sentence = item.lastUsedDays.map {
+            L("%@ · %lld일째 그대로", item.note, Int64($0))
+        } ?? item.note
+        // 되돌릴 수 없는 종류에는 **어느 폴더에 있는지**를 함께 보여준다.
+        // 파일명만 보이면 같은 이름의 다른 파일을 구별할 수 없다 — 이 맥에서
+        // 연말정산 증빙 스크린샷과 그냥 스크린샷이 화면에서 똑같이 보였다.
+        guard Self.userFileKinds.contains(item.kind) else { return sentence }
+        return PathDisplay.folder(of: item.path) + "\n" + sentence
     }
 
     private func symbol(for kind: ReclaimKind) -> String {

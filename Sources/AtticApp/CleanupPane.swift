@@ -53,9 +53,10 @@ struct CleanupPane: View {
                     MetricRow(symbol: "questionmark.folder",
                               symbolTint: Palette.over,
                               title: item.label,
-                              subtitle: leftoverReason(item),
-                              value: item.domain == .user ? L("내 계정") : L("시스템"),
-                              valueTint: .secondary) { EmptyView() }
+                              subtitle: leftoverPath(item),
+                              value: leftoverReason(item),
+                              valueTint: .secondary,
+                              subtitleTruncation: .middle) { EmptyView() }
                 }
             }
             Text("지워진 프로그램의 흔적이에요 · 시스템 항목은 관리자 권한이 있어야 지울 수 있어요")
@@ -64,12 +65,18 @@ struct CleanupPane: View {
         }
     }
 
+    /// 값 칸에는 **왜 찌꺼기인지**만 짧게. 경로는 부제로 내려 가운데를 접는다.
     private func leftoverReason(_ item: StartupItem) -> String {
         switch item.leftover {
-        case .programMissing(let path): return L("실행할 파일이 없어요 — %@", path)
-        case .emptyDefinition: return L("내용이 비어 있는 등록 파일이에요")
-        case nil: return item.plistPath
+        case .programMissing: return L("실행 파일 없음")
+        case .emptyDefinition: return L("빈 파일")
+        case nil: return ""
         }
+    }
+
+    private func leftoverPath(_ item: StartupItem) -> String {
+        if case .programMissing(let path) = item.leftover { return path }
+        return item.plistPath
     }
 
     /// 관리자 권한이 있어야 바꿀 수 있는 것들. 끄지는 못해도 **무엇이 올라오는지**
@@ -84,7 +91,8 @@ struct CleanupPane: View {
                                   symbolTint: Palette.muted,
                                   title: item.label,
                                   subtitle: item.programPath ?? item.plistPath,
-                                  value: "", valueTint: .secondary) { EmptyView() }
+                                  value: "", valueTint: .secondary,
+                                  subtitleTruncation: .middle) { EmptyView() }
                     }
                 }
                 Text("이 목록은 관리자 권한이 있어야 바꿀 수 있어 여기서는 보여주기만 해요")

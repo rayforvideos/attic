@@ -35,6 +35,10 @@ struct MetricRow<Trailing: View>: View {
     var valueIcon: String? = nil
     var valueIconTint: Color = .secondary
     var subtitleLines: Int = 1
+    /// 경로는 **가운데를 접어야** 한다. 뒤를 자르면 정작 무엇인지 알려주는
+    /// 파일명이 사라지고 "/Library/PrivilegedHelperTools/com.bjango.ista…"만
+    /// 남는다. 문장은 그대로 뒤를 자른다.
+    var subtitleTruncation: Text.TruncationMode = .tail
     @ViewBuilder var trailing: Trailing
 
     @State private var hovering = false
@@ -54,6 +58,7 @@ struct MetricRow<Trailing: View>: View {
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .lineLimit(subtitleLines)
+                        .truncationMode(subtitleTruncation)
                         .fixedSize(horizontal: false, vertical: subtitleLines > 1)
                 }
             }
