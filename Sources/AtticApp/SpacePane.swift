@@ -48,6 +48,9 @@ struct SpacePane: View {
     /// 되돌릴 수 없는 삭제라 확인을 한 번 받는다. 팝오버에서는 별도 창(alert)이
     /// 초점을 가져가며 팝오버를 닫아버릴 수 있어 같은 자리에서 확인한다.
     @State private var confirmingEmpty = false
+    /// 「허용했어요」를 눌렀는데도 여전히 막혀 있는 상태. 다시 시작해야 한다는
+    /// 사실을 그때 알려준다.
+    @State private var checkedButStillBlocked = false
 
     var body: some View {
         // 읽어야 의존성이 생긴다 — L()로 만든 문구가 언어 변경을 따라가게 하는 유일한 고리다.
@@ -359,6 +362,17 @@ struct SpacePane: View {
         }
     }
 
+    /// 앱을 다시 시작한다. 새 인스턴스를 띄운 뒤에 종료해야 창이 하나도 없는
+    /// 순간이 생기지 않는다.
+    private func restartApp() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL,
+                                           configuration: configuration) { _, _ in
+            Task { @MainActor in NSApp.terminate(nil) }
+        }
+    }
+
     /// 캐시를 훑으려면 남의 앱 폴더(Application Support·Containers)를 봐야 하고,
     /// macOS는 그걸 **앱마다 따로** 묻는다 — 앱 6개면 프롬프트 6개다. 전체 디스크
     /// 접근 하나면 전부 사라진다. 설정 안에 숨겨두면 아무도 못 찾으므로 스캔하는
@@ -374,12 +388,26 @@ struct SpacePane: View {
             Text("캐시를 찾으려면 다른 앱의 폴더를 봐야 해서, macOS가 앱마다 따로 물어봐요. 전체 디스크 접근을 한 번 허용하면 그 뒤로는 묻지 않아요.")
                 .font(.system(size: 10)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            // macOS의 전체 디스크 접근은 **앱을 다시 시작해야** 적용된다. 실행 중인
+            // 프로세스는 옛 권한 상태를 그대로 들고 있어서, 허용하고 「허용했어요」를
+            // 눌러도 배너가 사라지지 않는다(사용자 신고). 눌렀는데도 막혀 있으면
+            // 그 사실을 말하고 다시 시작할 길을 준다 — 예전에는 아무 반응이 없어
+            // 고장처럼 보였다.
+            if checkedButStillBlocked {
+                HStack(spacing: 6) {
+                    Text("아직 반영되지 않았어요 · 앱을 다시 시작하면 적용돼요")
+                        .font(.system(size: 10)).foregroundStyle(Palette.over)
+                    Button(L("다시 시작")) { restartApp() }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                    Spacer(minLength: 0)
+                }
+            }
             HStack(spacing: 8) {
                 Button(L("한 번만 허용하기")) {
                     NSWorkspace.shared.open(FullDiskAccess.settingsURL)
                 }
                 .buttonStyle(.borderedProminent).controlSize(.small)
-                Button(L("허용했어요")) { onRecheckAccess() }
+                Button(L("허용했어요")) { onRecheckAccess(); checkedButStillBlocked = true }
                     .buttonStyle(.bordered).controlSize(.small)
                 Spacer(minLength: 0)
             }

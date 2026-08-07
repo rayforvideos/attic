@@ -223,3 +223,5 @@
 "설정…" = "Settings…";
 "지난 배포용 보관본" = "Old release archives";
 "배포용 보관본이에요 · 지우면 그 빌드의 크래시 로그를 해석할 수 없어요" = "A release archive · deleting it means crash logs from that build can no longer be symbolized";
+"아직 반영되지 않았어요 · 앱을 다시 시작하면 적용돼요" = "Not in effect yet · restarting the app applies it";
+"다시 시작" = "Restart";
