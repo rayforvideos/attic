@@ -212,10 +212,8 @@
 
 /* 자동 실행 항목 */
 "프로그램은 없는데 등록만 남은 것" = "Registered to launch, but the program is gone";
-"실행할 파일이 없어요 — %@" = "Nothing left to run — %@";
-"내용이 비어 있는 등록 파일이에요" = "An empty registration file";
 "지워진 프로그램의 흔적이에요 · 시스템 항목은 관리자 권한이 있어야 지울 수 있어요" = "Leftovers from software you removed · system entries need an administrator to delete";
-"내 계정" = "My account";
-"시스템" = "System";
 "부팅할 때 함께 올라오는 프로그램 %lld개" = "%lld programs start with your Mac";
 "이 목록은 관리자 권한이 있어야 바꿀 수 있어 여기서는 보여주기만 해요" = "Changing these needs an administrator, so this list is read-only here";
+"실행 파일 없음" = "Program missing";
+"빈 파일" = "Empty file";
