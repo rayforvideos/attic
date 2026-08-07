@@ -114,17 +114,55 @@ echo "  hardened runtime ✓  타임스탬프 ✓  서명 유효 ✓"
 # ---------------------------------------------------------------- 4. DMG 만들기
 say "4/6 DMG 만들기"
 STAGE=build/dmg-stage
-rm -rf "$STAGE" "$DMG"
-mkdir -p "$STAGE"
+RW_DMG=build/attic-rw.dmg
+# Finder에게 창을 꾸미게 하려면 /Volumes에 정상 마운트해야 한다. 프로젝트 폴더
+# 안에 -mountpoint로 붙이면 Finder가 "disk"로 인식하지 못한다(실측: -1728).
+MOUNT="/Volumes/Attic $VERSION"
+rm -rf "$STAGE" "$DMG" "$RW_DMG"
+hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
+mkdir -p "$STAGE/.background"
 cp -R "$APP" "$STAGE/"
 # 받는 사람이 끌어다 놓을 대상. 안내 없이도 무엇을 하면 되는지 보인다.
 ln -s /Applications "$STAGE/Applications"
-# 출력을 버리지 말 것. hdiutil이 실패해도 파일은 남고, 그 깨진 파일을 공증에
-# 올리면 notarytool이 사전 검사에서 오류 없이 무한정 멈춘다(30분 날렸다).
-hdiutil create -volname "Attic $VERSION" -srcfolder "$STAGE" \
-    -ov -format UDZO "$DMG" >/dev/null \
-    || die "DMG를 만들지 못했습니다"
+cp Resources/dmg/background.png "$STAGE/.background/background.png"
+cp Resources/dmg/background@2x.png "$STAGE/.background/background@2x.png"
+
+# 창 꾸미기는 읽기·쓰기 이미지에서만 된다(.DS_Store를 써야 한다) — 꾸민 뒤
+# 압축본으로 변환한다. 출력을 버리지 않는다: 실패한 파일이 다음 단계로 넘어가면
+# 공증이 오류 없이 멈춘다(실제로 30분 날렸다).
+hdiutil create -volname "Attic $VERSION" -srcfolder "$STAGE" -ov \
+    -format UDRW -fs HFS+ "$RW_DMG" >/dev/null || die "임시 DMG를 만들지 못했습니다"
+hdiutil attach "$RW_DMG" >/dev/null || die "임시 DMG를 마운트하지 못했습니다"
+
+# Finder에게 창 모양을 시킨다. 실패해도 배포는 계속한다 — 꾸밈이 없다고
+# 설치가 안 되는 것은 아니다(자동화 권한이 없는 기계에서도 배포되어야 한다).
+osascript >/dev/null 2>&1 <<APPLESCRIPT || echo "  ⚠︎ 창 꾸미기를 건너뜁니다(Finder 자동화 권한 없음)"
+tell application "Finder"
+    tell disk "Attic $VERSION"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 140, 820, 560}
+        set theViewOptions to the icon view options of container window
+        set arrangement of theViewOptions to not arranged
+        set icon size of theViewOptions to 128
+        set background picture of theViewOptions to file ".background:background.png"
+        set position of item "Attic.app" of container window to {150, 210}
+        set position of item "Applications" of container window to {470, 210}
+        close
+        open
+        update without registering applications
+        delay 2
+    end tell
+end tell
+APPLESCRIPT
+
+hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
 rm -rf "$STAGE"
+hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null \
+    || die "DMG를 압축하지 못했습니다"
+rm -f "$RW_DMG"
 # 만든 DMG가 실제로 열리는지 확인한다. 이 검사가 없어서 깨진 파일이 통과했다.
 hdiutil verify "$DMG" >/dev/null 2>&1 || die "만든 DMG가 깨졌습니다 (hdiutil verify 실패)"
 # DMG 자체도 서명한다 — 공증은 서명된 컨테이너를 요구한다.
