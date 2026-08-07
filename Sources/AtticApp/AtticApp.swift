@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 저장된 언어 선택을 조회 경로에 먼저 반영한다 — 안 하면 저장은
             // 됐는데 모델·코어 문구만 시스템 언어로 나오는 어긋남이 생긴다.
             AppLanguage.restoreOnLaunch()
+            Self.applyDockVisibility()
             DiagnosticsModel.shared.startSampling()
             // 첫 실행이면 팝오버를 한 번 열어 준다 — 메뉴바 전용 앱이라 아무
             // 안내 없이 작은 아이콘만 생기면 실행된 줄도 모른다(검수에서 확인).
@@ -55,6 +56,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     Self.openMenuBarPopover()
                 }
             }
+        }
+    }
+
+    /// 도커에 아이콘을 보일지. 기본은 숨김(메뉴바 전용 앱이다).
+    ///
+    /// 왜 설정이 필요한가: `LSUIElement` 앱을 도커에 **고정**해도 그 아이콘은
+    /// 실행 아이콘일 뿐이라, 실행 중에도 도커에 떠 있는 앱이 아니어서 macOS가
+    /// 우클릭 메뉴에 종료를 넣어주지 않는다(사용자 신고). 도커 메뉴를 쓰려면
+    /// 도커에 표시되는 앱이 되어야 한다 — 그건 취향이라 사용자가 고르게 한다.
+    static let showInDockKey = "showInDock"
+
+    @MainActor static func applyDockVisibility() {
+        let show = UserDefaults.standard.bool(forKey: showInDockKey)
+        NSApp.setActivationPolicy(show ? .regular : .accessory)
+    }
+
+    /// 도커 아이콘 우클릭 메뉴. 도커에 표시하는 설정을 켰을 때만 나타난다
+    /// (숨김 상태에서는 도커 타일이 없어 이 메서드가 불리지 않는다).
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let open = NSMenuItem(title: L("열기"), action: #selector(openFromDock), keyEquivalent: "")
+        open.target = self
+        menu.addItem(open)
+        let scan = NSMenuItem(title: L("찾아보기"), action: #selector(scanFromDock), keyEquivalent: "")
+        scan.target = self
+        menu.addItem(scan)
+        // 종료는 macOS가 자동으로 붙이지만, 순서를 우리가 정하려면 직접 넣는다.
+        menu.addItem(.separator())
+        let quit = NSMenuItem(title: L("종료"), action: #selector(NSApplication.terminate(_:)),
+                              keyEquivalent: "")
+        menu.addItem(quit)
+        return menu
+    }
+
+    @objc private func openFromDock() {
+        MainActor.assumeIsolated { Self.openMenuBarPopover() }
+    }
+
+    @objc private func scanFromDock() {
+        MainActor.assumeIsolated {
+            Self.openMenuBarPopover()
+            Task { await DiagnosticsModel.shared.scanSpace() }
         }
     }
 

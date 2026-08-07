@@ -34,6 +34,8 @@ struct SettingsView: View {
     @State private var includeUserFiles =
         (UserDefaults.standard.object(forKey: "includeUserFiles") as? Bool) ?? true
     @State private var hasFullDiskAccess = FullDiskAccess.isGranted
+    @State private var showInDock =
+        UserDefaults.standard.bool(forKey: AppDelegate.showInDockKey)
 
     var body: some View {
         // 이 값을 읽어야 언어 변경이 이 뷰를 다시 그린다(선언만으로는 부족하다).
@@ -68,6 +70,16 @@ struct SettingsView: View {
                         loginItemNote = L("시스템 설정 → 로그인 항목에서 승인이 필요해요")
                     }
                 }))
+            Toggle("도커에 아이콘 보이기", isOn: Binding(
+                get: { showInDock },
+                set: { value in
+                    showInDock = value
+                    UserDefaults.standard.set(value, forKey: AppDelegate.showInDockKey)
+                    AppDelegate.applyDockVisibility()
+                }))
+            Text("메뉴바 전용이라 기본은 숨김이에요 · 보이게 하면 도커 아이콘을 우클릭해 종료할 수 있어요")
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             if let loginItemNote {
                 HStack(spacing: 8) {
                     Text(loginItemNote)
