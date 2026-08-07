@@ -34,6 +34,7 @@ struct PopoverView: View {
             spaceNote: model.spaceNote,
             notificationsUnavailable: model.notifier.fallbackActive,
             launchAgents: model.launchAgents,
+            startupItems: model.startupItems,
             togglingAgents: togglingAgents,
             onToggleAgent: { agent in
                 reapNote = nil
@@ -103,6 +104,7 @@ struct PopoverBody: View {
     let spaceNote: UserNote?
     var notificationsUnavailable: Bool = false
     var launchAgents: [LaunchAgent] = []
+    var startupItems: [StartupItem] = []
     var togglingAgents: Set<String> = []
     var onToggleAgent: (LaunchAgent) -> Void = { _ in }
     let onReap: (ResidueGroup) -> Void
@@ -174,6 +176,7 @@ struct PopoverBody: View {
                                     reapingPaths: reapingPaths,
                                     reapBlocked: reapBlocked,
                                     launchAgents: launchAgents,
+                                    startupItems: startupItems,
                                     togglingAgents: togglingAgents,
                                     onToggleAgent: onToggleAgent,
                                     onReap: onReap)

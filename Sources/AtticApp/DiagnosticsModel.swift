@@ -70,6 +70,9 @@ final class DiagnosticsModel {
     }
 
     private(set) var launchAgents: [LaunchAgent] = []
+    /// 부팅·로그인할 때 올라오는 항목 전체(시스템 도메인 포함, 읽기 전용).
+    /// 끄고 켜는 것은 여전히 사용자 도메인에서만 한다 — 안전 경계는 그대로다.
+    private(set) var startupItems: [StartupItem] = []
     private let launchAgentManager = LaunchAgentManager()
 
     /// 팝오버가 닫혀 있는 동안 스캔이 끝났고, 아직 공간 탭을 보지 않았는지.
@@ -187,6 +190,10 @@ final class DiagnosticsModel {
         Task { [weak self, launchAgentManager] in
             let agents = await Task.detached { launchAgentManager.list() }.value
             self?.launchAgents = agents
+        }
+        Task { [weak self] in
+            let items = await Task.detached { StartupInventory().scan() }.value
+            self?.startupItems = items
         }
         // 닫혀 있는 동안에는 5분에 한 번만 훑으므로, 열었을 때 정리 탭이 최대
         // 5분 낡아 있다 — 보러 온 순간에 한 번 새로 훑는다(372ms).
