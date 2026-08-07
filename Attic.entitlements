@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 비샌드박스: app-sandbox 키를 넣지 않는다. 이 앱에 필요한 entitlement는 없다. -->
+</dict>
+</plist>

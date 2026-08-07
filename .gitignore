@@ -1,0 +1,10 @@
+.build/
+build/
+.DS_Store
+
+# 작업 과정 산출물 — 저장소에 올리지 않는다
+.superpowers/
+docs/
+prototypes/
+Scripts/*.md
+.idea/
