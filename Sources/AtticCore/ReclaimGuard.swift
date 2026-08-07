@@ -40,6 +40,10 @@ public enum ReclaimKind: String, Sendable, CaseIterable, Codable {
     case oldScreenshot
     /// 홈의 큰 파일. 무엇인지 앱이 판단할 수 없으므로 목록으로만 드러낸다.
     case largeFile
+    /// Xcode가 배포용으로 만든 보관본(`*.xcarchive`). 캐시가 아니라 **결과물**이라
+    /// 다시 만들려면 그 시점의 소스로 다시 빌드해야 한다 — 배포한 빌드의 크래시
+    /// 로그를 해석하는 데도 쓰이므로 자동 선택에서 빼고 경고를 붙인다.
+    case xcodeArchive
 }
 
 /// The single safety boundary for the reclaim feature. Every candidate path —
@@ -84,6 +88,9 @@ public struct ReclaimGuard: Sendable {
         [
             .buildCache: [
                 "\(home)/Library/Developer/Xcode/DerivedData",
+            ],
+            .xcodeArchive: [
+                "\(home)/Library/Developer/Xcode/Archives",
             ],
             .deviceSupport: [
                 "\(home)/Library/Developer/Xcode/iOS DeviceSupport",
@@ -188,6 +195,11 @@ public struct ReclaimGuard: Sendable {
 
         if kind == .largeFile {
             return checkLargeFile(path: path)
+        }
+
+        if kind == .xcodeArchive {
+            return checkXcodeArchive(path: path, ageDays: ageDays,
+                                     staleThresholdDays: staleThresholdDays)
         }
 
         if kind == .nodeModules {
@@ -369,6 +381,20 @@ public struct ReclaimGuard: Sendable {
         return name.range(of: #"\d{4}-\d{2}-\d{2}"#, options: .regularExpression) != nil
     }
 
+    /// 보관본 하나(`*.xcarchive`)만 후보다. Archives 폴더나 날짜 폴더 자체를
+    /// 대상으로 삼으면 여러 빌드를 한꺼번에 지우게 되고, 사용자가 무엇을 잃는지
+    /// 알 수 없다 — 빌드 하나씩 보여주고 고르게 한다.
+    private func checkXcodeArchive(path: String, ageDays: Int,
+                                   staleThresholdDays: Int) -> ReclaimRefusal? {
+        let root = "\(home)/Library/Developer/Xcode/Archives"
+        guard matchesRoot(path, root: root), path != root else { return .outsideAllowedRoots }
+        guard (path as NSString).pathExtension.lowercased() == "xcarchive" else {
+            return .outsideAllowedRoots
+        }
+        guard ageDays >= staleThresholdDays else { return .tooRecent(days: ageDays) }
+        return nil
+    }
+
     /// 스크린샷에는 **한 달**을 쓴다(다른 종류의 "오래된 기준"과 별개).
     ///
     /// 스크린샷은 원래 한 번 쓰고 버리는 것이다 — 어딘가에 붙여넣으려고 찍고
@@ -449,6 +475,11 @@ public struct ReclaimGuard: Sendable {
         }
 
         if kind == .largeFile { return checkLargeFile(path: path) == nil }
+
+        if kind == .xcodeArchive {
+            return checkXcodeArchive(path: path, ageDays: ageDays,
+                                     staleThresholdDays: staleThresholdDays) == nil
+        }
 
         if kind == .nodeModules {
             return checkNodeModules(path: path, lockfilePresent: lockfilePresent,

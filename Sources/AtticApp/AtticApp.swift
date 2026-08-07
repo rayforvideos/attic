@@ -28,13 +28,15 @@ struct AtticApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Attic 설정", id: "settings") {
+        // Window(id:)가 아니라 Settings scene을 쓴다. SwiftUI의 openWindow는 뷰
+        // 안에서만 부를 수 있어서, 도커 메뉴(AppKit)에서 열 길이 없었다 —
+        // 팝오버를 한 번도 열지 않았으면 설정이 아예 열리지 않았다(사용자 신고).
+        // Settings scene은 표준 액션(showSettingsWindow:)이 있어 어디서든 열린다.
+        Settings {
             SettingsView().environment(model)
                 .environment(\.locale, model.languageCode.map(Locale.init(identifier:))
                              ?? Locale.autoupdatingCurrent)
         }
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
     }
 }
 
@@ -91,11 +93,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettingsFromDock() {
-        MainActor.assumeIsolated {
-            NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
-            // SwiftUI의 Settings scene이 아니라 우리가 만든 Window라 id로 연다.
-            Self.openSettingsAction?()
-        }
+        MainActor.assumeIsolated { AppDelegate.openSettings() }
+    }
+
+    /// 설정 창을 연다. Settings scene의 표준 액션이라 팝오버가 떠 있지 않아도,
+    /// 도커 메뉴에서 불려도 동작한다 — 예전에는 팝오버를 한 번도 열지 않았으면
+    /// 설정이 아예 열리지 않았다(SwiftUI의 openWindow는 뷰 안에서만 부를 수 있다).
+    @MainActor static func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     @objc private func scanFromDock() {
@@ -105,9 +111,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 설정 창을 여는 방법은 SwiftUI가 환경으로만 준다(openWindow) — 팝오버가
-    /// 시작할 때 여기에 넘겨준다. AppKit 쪽(도커 메뉴)에서 부를 길이 그것뿐이다.
-    @MainActor static var openSettingsAction: (() -> Void)?
 
     /// Finder·Launchpad에서 이미 실행 중인 앱을 다시 열면 아무 일도 안 일어나
     /// 고장처럼 보인다 — 재열기 신호를 받아 팝오버를 연다.

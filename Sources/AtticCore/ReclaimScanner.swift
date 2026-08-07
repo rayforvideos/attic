@@ -154,6 +154,7 @@ public struct ReclaimScanner: Sendable {
         }
 
         let electronCaches = findElectronCaches()
+        let archives = findXcodeArchives()
         let libraryCaches = findLibraryCaches()
 
         var nodeModulesPaths: [String] = []
@@ -181,6 +182,9 @@ public struct ReclaimScanner: Sendable {
                                            name: humanName(forLibraryCache: $0)) }
             + electronCaches.map { WorkUnit(path: $0, kind: .electronCache,
                                             name: humanName(forElectronCache: $0)) }
+            + archives.map { WorkUnit(path: $0, kind: .xcodeArchive,
+                                      name: (($0 as NSString).lastPathComponent as NSString)
+                                          .deletingPathExtension) }
             + nodeModulesPaths.map { WorkUnit(path: $0, kind: nil,
                                               name: humanName(forNodeModules: $0)) }
 
@@ -316,6 +320,15 @@ public struct ReclaimScanner: Sendable {
 
     /// 측정 전 가드 통과 여부. `evaluateCacheRoot`와 **같은 근거**를 써야
     /// 한다 — 다르면 여기서 통과한 것이 뒤에서 거부되어 진행 표시가 어긋난다.
+    /// 항목의 나이(일). 캐시 루트에는 의미가 없어 0을 쓰지만, 보관본은 **오래된
+    /// 것만** 후보라 실제 나이가 필요하다 — 안 재면 가드가 항상 거부한다.
+    private func ageDays(of path: String, kind: ReclaimKind) -> Int {
+        guard kind == .xcodeArchive else { return 0 }
+        guard let modified = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
+        else { return 0 }
+        return max(0, Int(Date().timeIntervalSince(modified) / 86_400))
+    }
+
     private func passesGuard(_ path: String, kind: ReclaimKind,
                              guardian: ReclaimGuard) -> Bool {
         let fm = FileManager.default
@@ -323,7 +336,8 @@ public struct ReclaimScanner: Sendable {
         guard fm.fileExists(atPath: path, isDirectory: &isDirectory),
               isDirectory.boolValue else { return false }
         let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-        return guardian.check(path: path, kind: kind, lockfilePresent: false, ageDays: 0,
+        return guardian.check(path: path, kind: kind, lockfilePresent: false,
+                              ageDays: ageDays(of: path, kind: kind),
                               isSymlink: isSymlinkPath(path), resolvedPath: resolved,
                               staleThresholdDays: staleThresholdDays) == nil
     }
@@ -410,7 +424,8 @@ public struct ReclaimScanner: Sendable {
         let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
 
         let refusal = guardian.check(
-            path: path, kind: kind, lockfilePresent: false, ageDays: 0,
+            path: path, kind: kind, lockfilePresent: false,
+            ageDays: ageDays(of: path, kind: kind),
             isSymlink: isSymlink, resolvedPath: resolvedPath,
             staleThresholdDays: staleThresholdDays
         )
@@ -607,6 +622,19 @@ public struct ReclaimScanner: Sendable {
     /// **앱 안에서 훑는다** — 여기가 데스크탑·문서·다운로드를 지나가는 자리이고,
     /// 자식 프로세스(find)로 훑으면 허용이 우리 앱에 기록되지 않아 스캔할 때마다
     /// 프롬프트가 다시 뜬다(사용자 신고). 가지치기(숨김·Library·깊이 4)는 같다.
+    /// 배포용 보관본(`*.xcarchive`)을 찾는다. Archives/<날짜>/<이름>.xcarchive
+    /// 구조라 깊이 3까지 본다 — 빌드 하나씩 보여줘야 무엇을 잃는지 알 수 있다.
+    private func findXcodeArchives() -> [String] {
+        var found: [String] = []
+        DirectoryWalk.walk(root: "\(home)/Library/Developer/Xcode/Archives",
+                           maxDepth: 3, onDirectory: { path in
+            guard (path as NSString).pathExtension.lowercased() == "xcarchive" else { return false }
+            found.append(path)
+            return true     // 보관본 안쪽은 더 볼 필요가 없다
+        })
+        return found
+    }
+
     private func sweepHome() -> (largeFiles: [FileHit], screenshots: [FileHit]) {
         var large: [FileHit] = []
         var shots: [FileHit] = []
@@ -762,6 +790,8 @@ public struct ReclaimScanner: Sendable {
         case .electronCache: name(forElectronCache: path, home: home)
         case .buildCache, .deviceSupport, .packageCache, .appCache:
             name(forCacheRoot: path)
+        // 보관본은 파일명이 곧 빌드 이름이다 — 번역할 것이 없다.
+        case .xcodeArchive: fallback
         // node_modules·사용자 파일은 경로에서 바로 만든 이름이라 번역이 없다.
         case .nodeModules, .staleInstaller, .oldScreenshot, .largeFile: fallback
         }
@@ -803,6 +833,10 @@ public struct ReclaimScanner: Sendable {
                      Int64(ReclaimGuard.screenshotStaleDays))
         case .largeFile:
             return L("무엇인지 확인하고 직접 고르세요 · 지우면 되돌릴 수 없어요")
+        case .xcodeArchive:
+            // 캐시가 아니라 결과물이다. 배포한 빌드의 크래시 로그를 해석할 때
+            // 쓰이므로, 다시 만들 수 있다고 말하면 안 된다.
+            return L("배포용 보관본이에요 · 지우면 그 빌드의 크래시 로그를 해석할 수 없어요")
         case .libraryCache:
             return L("앱이 다시 만들어요 · 다음 실행이 조금 느릴 수 있어요")
         case .electronCache:

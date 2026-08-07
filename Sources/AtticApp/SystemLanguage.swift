@@ -12,8 +12,13 @@ enum SystemLanguage {
     /// `L()`이 쓰는 번들과 다르다: 언어 설정은 앱 도메인의 AppleLanguages로
     /// 구현돼 있어 Bundle.main도 그걸 따른다 — 그래서 시스템 도메인을 직접 읽는다.
     private static let bundle: Bundle = {
-        let preferred = UserDefaults(suiteName: "NSGlobalDomain")?
-            .stringArray(forKey: "AppleLanguages") ?? []
+        // UserDefaults(suiteName: "NSGlobalDomain")은 nil을 준다 — macOS가 "말이
+        // 안 되는 suite"라고 로그까지 남긴다(실측). 그러면 Bundle.main으로 떨어져
+        // 앱 언어 설정을 따라가고, 결국 시스템 항목과 언어가 어긋난다.
+        // 전역 도메인은 CFPreferences로 읽어야 한다.
+        let preferred = CFPreferencesCopyValue(
+            "AppleLanguages" as CFString, kCFPreferencesAnyApplication,
+            kCFPreferencesCurrentUser, kCFPreferencesAnyHost) as? [String] ?? []
         let available = Bundle.main.localizations
         for language in preferred {
             let code = String(language.prefix(2))

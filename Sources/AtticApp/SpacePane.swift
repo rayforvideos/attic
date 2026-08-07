@@ -57,7 +57,7 @@ struct SpacePane: View {
 
     private static let kindOrder: [ReclaimKind] = [
         .buildCache, .deviceSupport, .packageCache, .appCache, .libraryCache, .electronCache, .nodeModules,
-        .staleInstaller, .oldScreenshot, .largeFile,
+        .xcodeArchive, .staleInstaller, .oldScreenshot, .largeFile,
     ]
     private static let kindTitles: [ReclaimKind: String] = [
         .buildCache: "빌드 캐시",
@@ -67,6 +67,7 @@ struct SpacePane: View {
         .nodeModules: "안 쓰는 node_modules",
         .electronCache: "앱이 받아둔 웹 캐시",
         .libraryCache: "앱 캐시",
+        .xcodeArchive: "지난 배포용 보관본",
         .staleInstaller: "받아두고 잊은 다운로드",
         .oldScreenshot: "오래된 스크린샷",
         .largeFile: "큰 파일 — 직접 확인하세요",
@@ -276,11 +277,15 @@ struct SpacePane: View {
 
     /// 종류가 캐시인 항목 — 다시 만들어지는 것들만 한꺼번에 고를 수 있다.
     private var safeToSelectAll: [ReclaimItem] {
-        items.filter { !Self.userFileKinds.contains($0.kind) }
+        items.filter { !Self.cautionKinds.contains($0.kind) }
     }
 
     /// 되돌릴 수 없는 종류. 자동 선택에서 빼고, 행에 경로를 함께 보여준다.
     static let userFileKinds: Set<ReclaimKind> = [.staleInstaller, .oldScreenshot, .largeFile]
+
+    /// 「캐시 모두 선택」에서 빼는 종류. 사용자 파일에 **배포용 보관본**을 더한다 —
+    /// 캐시가 아니라 결과물이고, 지우면 배포한 빌드의 크래시 로그를 해석할 수 없다.
+    static let cautionKinds: Set<ReclaimKind> = userFileKinds.union([.xcodeArchive])
 
     private var totalBytes: UInt64 {
         items.reduce(UInt64(0)) { $0 + $1.bytes }
@@ -544,6 +549,7 @@ struct SpacePane: View {
 
     private func symbol(for kind: ReclaimKind) -> String {
         switch kind {
+        case .xcodeArchive: "shippingbox.and.arrow.backward"
         case .buildCache: "hammer.fill"
         case .deviceSupport: "iphone"
         case .packageCache: "shippingbox.fill"
@@ -560,6 +566,7 @@ struct SpacePane: View {
     private func tint(for kind: ReclaimKind) -> Color {
         switch kind {
         case .buildCache: Palette.locked
+        case .xcodeArchive: Palette.over
         case .deviceSupport: Palette.locked
         case .packageCache: Palette.apps
         case .appCache: Palette.apps

@@ -417,3 +417,30 @@ struct UserFileGuardTests {
         #expect(check("\(home)/Library/Caches/x", .largeFile) != nil)
     }
 }
+
+@Suite("ReclaimGuard — 배포용 보관본")
+struct XcodeArchiveGuardTests {
+    let home = "/Users/tester"
+    private func check(_ path: String, ageDays: Int = 200) -> ReclaimRefusal? {
+        ReclaimGuard(home: home).check(path: path, kind: .xcodeArchive,
+                                       lockfilePresent: false, ageDays: ageDays,
+                                       isSymlink: false, resolvedPath: path,
+                                       staleThresholdDays: 90)
+    }
+
+    @Test func allowsOldArchiveBundle() {
+        #expect(check("\(home)/Library/Developer/Xcode/Archives/2026-01-02/앱 2026-01-02.xcarchive") == nil)
+    }
+
+    /// 보관본 하나씩만 후보다. 날짜 폴더나 Archives 자체를 넘기면 여러 빌드를
+    /// 한꺼번에 지우게 되고, 사용자가 무엇을 잃는지 알 수 없다.
+    @Test func refusesFoldersAndRecentArchives() {
+        #expect(check("\(home)/Library/Developer/Xcode/Archives") != nil)
+        #expect(check("\(home)/Library/Developer/Xcode/Archives/2026-01-02") != nil)
+        #expect(check("\(home)/Library/Developer/Xcode/Archives/2026-01-02/앱.xcarchive",
+                      ageDays: 3) != nil)
+        // Archives 밖의 .xcarchive는 대상이 아니다
+        #expect(check("\(home)/Downloads/앱.xcarchive") != nil)
+        #expect(check("\(home)/Library/Developer/Xcode/DerivedData/x.xcarchive") != nil)
+    }
+}

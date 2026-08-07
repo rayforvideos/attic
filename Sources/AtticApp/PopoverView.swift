@@ -5,16 +5,6 @@ import AtticCore
 /// 환경(모델)과 화면을 잇는 얇은 껍데기. 화면 자체는 PopoverBody가 값만 받아 그린다
 /// — 그래야 실제 시스템 상태 없이도 디자인을 그대로 띄워 볼 수 있다.
 struct PopoverView: View {
-    /// 도커 메뉴가 설정 창을 열 수 있게 통로를 등록한다. 뷰가 그려질 때마다
-    /// 같은 클로저로 덮어써도 값이 같아 문제가 없다.
-    private func registerSettingsOpener() -> Bool {
-        let open = openWindow
-        AppDelegate.openSettingsAction = {
-            NSApp.activate(ignoringOtherApps: true)
-            open(id: "settings")
-        }
-        return true
-    }
 
     @Environment(DiagnosticsModel.self) private var model
     @Environment(\.openWindow) private var openWindow
@@ -24,10 +14,7 @@ struct PopoverView: View {
     @State private var isMovingToTrash = false
 
     var body: some View {
-        // 도커 메뉴는 AppKit 쪽에서 불리므로 SwiftUI의 openWindow를 쓸 수 없다 —
-        // 여기서 통로를 하나 등록해 둔다.
-        let _ = registerSettingsOpener()
-        return PopoverBody(
+        PopoverBody(
             residueGroups: model.residueGroups,
             reapingPaths: reaping,
             reapBlocked: model.isReaping,
@@ -83,7 +70,7 @@ struct PopoverView: View {
             onEmptyTrash: { Task { await model.emptyTrash() } },
             onOpenSettings: {
                 NSApp.activate(ignoringOtherApps: true)   // 없으면 창이 다른 앱 뒤에 뜬다
-                openWindow(id: "settings")
+                AppDelegate.openSettings()
             },
             onQuit: { NSApp.terminate(nil) },
             onAppearLive: { model.startLiveRefresh() },
