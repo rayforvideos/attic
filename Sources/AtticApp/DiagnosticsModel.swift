@@ -88,6 +88,8 @@ final class DiagnosticsModel {
     private var liveTask: Task<Void, Never>?
     private var previousCPUTimes: [ProcIdentity: UInt64] = [:]
     private var previousObservedAt: Date?
+    /// 마지막으로 프로세스를 훑은 시각 — 닫혀 있을 때 주기를 늦추는 데 쓴다.
+    private var lastProcessSampleAt: Date?
     /// 마지막 30초 정밀 샘플링 결과. 1초 가벼운 갱신은 이 값을 그대로 재사용해서
     /// ProcessSampler(argv·cwd·fd 훑기)를 다시 돌리지 않는다.
     private var lastSamples: [ProcessSample] = []
@@ -136,9 +138,35 @@ final class DiagnosticsModel {
         samplingTask?.cancel()
         samplingTask = Task { [weak self] in
             while !Task.isCancelled {
-                await self?.sampleOnce()
+                await self?.tick()
                 try? await Task.sleep(for: interval, tolerance: .seconds(5))
             }
+        }
+    }
+
+    /// 프로세스를 훑지 않고 넘어갈 수 있는 최대 간격. 팝오버가 닫혀 있으면
+    /// 이만큼에 한 번만 훑는다.
+    private static let idleSamplingInterval: TimeInterval = 300
+
+    /// 30초마다 도는 한 바퀴. **디스크 확인과 프로세스 훑기를 분리한다.**
+    ///
+    /// 프로세스 훑기는 이 맥에서 372ms가 걸리고(프로세스 355개, 실측),
+    /// 그 결과는 정리 탭에서만 쓴다 — 알림에는 쓰이지 않는다. 팝오버가 닫혀
+    /// 있는데 30초마다 372ms를 태우면, 남의 배터리를 갉아먹는 상주 앱을 찾아주는
+    /// 앱이 정작 자기가 그 짓을 하는 셈이다.
+    ///
+    /// 디스크 확인은 7.7ms라 매번 해도 된다(알림이 늦으면 안 되는 쪽이다).
+    private func tick() async {
+        await checkDiskThreshold()
+
+        let due = lastProcessSampleAt.map {
+            Date().timeIntervalSince($0) >= Self.idleSamplingInterval
+        } ?? true
+        // 닫혀 있어도 가끔은 훑는다 — 열었을 때 비교할 직전 관측이 없으면
+        // "CPU를 안 쓰고 있다"를 판정할 수 없다(5분 간격이 30초보다 오히려
+        // 정확한 신호가 된다).
+        if isPopoverOpen || due {
+            await sampleOnce()
         }
     }
 
@@ -160,6 +188,9 @@ final class DiagnosticsModel {
             let agents = await Task.detached { launchAgentManager.list() }.value
             self?.launchAgents = agents
         }
+        // 닫혀 있는 동안에는 5분에 한 번만 훑으므로, 열었을 때 정리 탭이 최대
+        // 5분 낡아 있다 — 보러 온 순간에 한 번 새로 훑는다(372ms).
+        Task { [weak self] in await self?.sampleOnce() }
         refreshTrash()
         hasFullDiskAccess = FullDiskAccess.isGranted
     }
@@ -241,6 +272,7 @@ final class DiagnosticsModel {
     /// **창 없이 남아 있는 개발 프로세스**를 찾고, **디스크 여유**를 지켜보는 것.
     /// CPU·메모리 진단은 이 앱의 일이 아니게 되어 걷어냈다.
     func sampleOnce() async {
+        lastProcessSampleAt = Date()
         let collected = await Self.collect()
         let samples = collected.samples
         lastSamples = samples
@@ -261,7 +293,6 @@ final class DiagnosticsModel {
             samples.map { ($0.identity, $0.cpuTimeNanos) })
         previousObservedAt = Date()
 
-        await checkDiskThreshold()
     }
 
     /// 디스크 여유가 임계치 아래로 떨어지면, 스캔 결과가 낡았을 때 저우선순위로
@@ -294,22 +325,29 @@ final class DiagnosticsModel {
         }
         UserDefaults.standard.set(diskAlertJudge?.lastAlertAt, forKey: "diskAlertLastAt")
 
-        // 6시간 넘게 낡은 결과로는 "비울 수 있는 양"을 말할 수 없다 — 조용히 갱신.
+        // 6시간 넘게 낡은 결과로는 "비울 수 있는 양"을 말할 수 없다.
         let stale = spaceScanCompletedAt.map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true
-        // 사용자가 이미 [찾아보기]를 눌러 스캔 중이면 scanSpace가 즉시 반환한다 —
-        // 그 상태로 "비울 게 없어요"라고 말하면 훑지도 않고 단정하는 것이다.
         let scanningAlready = isScanningSpace
+
+        // **알림을 스캔 뒤로 미루지 않는다.** 예전에는 여기서 전체 스캔을 기다린
+        // 뒤에 알렸는데, 콜드 스캔이 160초이고 저우선순위면 더 걸린다(디스크가
+        // 3.5배 스로틀된다) — "공간이 부족해요"는 몇 분 늦으면 쓸모가 없다.
+        // 게다가 이 함수는 30초 샘플링 루프 안에서 불리므로, 기다리는 동안
+        // 프로세스 관찰까지 통째로 멈춰 있었다.
         if stale && !scanningAlready {
-            await scanSpace(lowPriority: true, quiet: true)
+            Task { [weak self] in await self?.scanSpace(lowPriority: true, quiet: true) }
         }
-        let reclaimable = spaceItems.reduce(UInt64(0)) { $0 + $1.bytes }
+
+        // 낡은 숫자를 사실처럼 말하지 않는다 — 확인 중이라고 말하고, 결과는
+        // 메뉴바 아이콘이 알려준다(조용한 스캔이 끝나면 표시가 바뀐다).
         let body: String
-        if reclaimable > 0 {
-            body = L("%@는 바로 비울 수 있어요", SizeText.compact(reclaimable))
-        } else if stale && scanningAlready {
+        if stale || scanningAlready {
             body = L("지금 무엇을 비울 수 있는지 확인하는 중이에요")
         } else {
-            body = L("훑어봤지만 안전하게 비울 만한 게 없었어요")
+            let reclaimable = spaceItems.reduce(UInt64(0)) { $0 + $1.bytes }
+            body = reclaimable > 0
+                ? L("%@는 바로 비울 수 있어요", SizeText.compact(reclaimable))
+                : L("훑어봤지만 안전하게 비울 만한 게 없었어요")
         }
         await notifier.notify(
             title: L("디스크 여유가 %@ 남았어요", SizeText.compact(snapshot.free)),
