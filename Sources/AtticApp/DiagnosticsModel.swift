@@ -67,6 +67,9 @@ final class DiagnosticsModel {
 
     func setLanguage(_ language: AppLanguage) {
         languageCode = language == .system ? nil : language.rawValue
+        // 이미 만들어 둔 결과 문구는 옛 언어로 얼어붙어 있다 — 다시 만들 수
+        // 없으니 치운다. 그 자리에서 읽는 한 줄이라 사라져도 잃는 것이 없다.
+        spaceNote = nil
     }
 
     private(set) var launchAgents: [LaunchAgent] = []

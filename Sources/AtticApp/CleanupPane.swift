@@ -4,6 +4,11 @@ import AtticCore
 /// 정리 탭 — **숨어서 돌고 있는 것**을 모아 둔다. 창은 닫혔는데 살아 있는 개발
 /// 프로세스와, 로그인마다 조용히 올라오는 프로그램이다.
 struct CleanupPane: View {
+    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
+    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
+    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    @Environment(\.locale) private var locale
+
     let residueGroups: [ResidueGroup]
     let reapingPaths: Set<String>
     let reapBlocked: Bool
@@ -18,6 +23,7 @@ struct CleanupPane: View {
     @State private var systemHovering = false
 
     var body: some View {
+        let _ = locale   // 읽어야 언어 변경이 이 뷰를 다시 그린다
         VStack(alignment: .leading, spacing: 9) {
             // 로그인 항목을 먼저 둔다. 개발 프로세스는 개발자에게만 나오는데,
             // 그걸 맨 위에 두면 일반 사용자는 늘 "없어요" 한 줄만 보게 된다.

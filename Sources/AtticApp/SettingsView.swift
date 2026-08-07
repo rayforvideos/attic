@@ -4,6 +4,11 @@ import UserNotifications
 import AtticCore
 
 struct SettingsView: View {
+    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
+    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
+    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    @Environment(\.locale) private var locale
+
     @Environment(\.appearsActive) private var appearsActive
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var protectedPathsText =
@@ -31,6 +36,8 @@ struct SettingsView: View {
     @State private var hasFullDiskAccess = FullDiskAccess.isGranted
 
     var body: some View {
+        // 이 값을 읽어야 언어 변경이 이 뷰를 다시 그린다(선언만으로는 부족하다).
+        let _ = locale
         Form {
             Section {
             Picker(L("언어"), selection: Binding(
@@ -215,6 +222,10 @@ struct SettingsView: View {
         .padding()
         .frame(width: 430)
         // 사용자가 시스템 설정에서 껐을 수 있다 — 로컬 저장 금지, 매번 status를 읽는다
+        .onChange(of: locale) { _, _ in
+            // L()로 만들어 상태에 담아둔 안내는 옛 언어로 얼어붙는다 — 치운다.
+            loginItemNote = nil
+        }
         .onChange(of: appearsActive) { _, active in
             if active {
                 launchAtLogin = SMAppService.mainApp.status == .enabled

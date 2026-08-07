@@ -5,6 +5,11 @@ import AtticCore
 /// "회수"라는 말은 쓰지 않는다("비우다" 어휘만 쓴다). 선택 상태는 이 화면이 직접 들고
 /// 있는다(모델은 스캔 결과와 진행 상태만 안다).
 struct SpacePane: View {
+    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
+    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
+    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    @Environment(\.locale) private var locale
+
     /// 한 번이라도 훑어봤는지. 모델이 기억한다 — 뷰 로컬 상태로 두면 탭을 옮겼다
     /// 돌아올 때 결과가 있는데도 시작 화면이 뜬다(실측으로 확인).
     let hasScanned: Bool
@@ -44,7 +49,11 @@ struct SpacePane: View {
     /// 초점을 가져가며 팝오버를 닫아버릴 수 있어 같은 자리에서 확인한다.
     @State private var confirmingEmpty = false
 
-    var body: some View { pane().onAppear(perform: onAppear) }
+    var body: some View {
+        // 읽어야 의존성이 생긴다 — L()로 만든 문구가 언어 변경을 따라가게 하는 유일한 고리다.
+        let _ = locale
+        pane().onAppear(perform: onAppear)
+    }
 
     private static let kindOrder: [ReclaimKind] = [
         .buildCache, .deviceSupport, .packageCache, .appCache, .libraryCache, .electronCache, .nodeModules,
