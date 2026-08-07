@@ -119,9 +119,14 @@ mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 # 받는 사람이 끌어다 놓을 대상. 안내 없이도 무엇을 하면 되는지 보인다.
 ln -s /Applications "$STAGE/Applications"
+# 출력을 버리지 말 것. hdiutil이 실패해도 파일은 남고, 그 깨진 파일을 공증에
+# 올리면 notarytool이 사전 검사에서 오류 없이 무한정 멈춘다(30분 날렸다).
 hdiutil create -volname "Attic $VERSION" -srcfolder "$STAGE" \
-    -ov -format UDZO "$DMG" >/dev/null
+    -ov -format UDZO "$DMG" >/dev/null \
+    || die "DMG를 만들지 못했습니다"
 rm -rf "$STAGE"
+# 만든 DMG가 실제로 열리는지 확인한다. 이 검사가 없어서 깨진 파일이 통과했다.
+hdiutil verify "$DMG" >/dev/null 2>&1 || die "만든 DMG가 깨졌습니다 (hdiutil verify 실패)"
 # DMG 자체도 서명한다 — 공증은 서명된 컨테이너를 요구한다.
 codesign --force --sign "$IDENTITY" --timestamp "$DMG"
 echo "  $DMG ($(du -h "$DMG" | cut -f1))"
