@@ -15,6 +15,7 @@ struct CleanupPane: View {
     let onReap: (ResidueGroup) -> Void
 
     @State private var systemExpanded = false
+    @State private var systemHovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -81,26 +82,57 @@ struct CleanupPane: View {
 
     /// 관리자 권한이 있어야 바꿀 수 있는 것들. 끄지는 못해도 **무엇이 올라오는지**
     /// 아는 것 자체가 출발점이다(백신·은행 보안 프로그램·각종 업데이터).
+    ///
+    /// DisclosureGroup을 쓰지 않는다: 클릭 영역이 삼각형과 글자에만 걸려 누르기가
+    /// 어렵고, 열렸는지도 눈에 잘 안 들어온다(사용자 신고). 줄 전체를 버튼으로
+    /// 만들고, 화살표를 돌리고, 열려 있는 동안 배경을 남겨 상태를 보이게 한다.
     @ViewBuilder
     private var systemSection: some View {
         if !systemItems.isEmpty {
-            DisclosureGroup(isExpanded: $systemExpanded) {
-                VStack(spacing: 1) {
-                    ForEach(systemItems) { item in
-                        MetricRow(symbol: "gearshape.2",
-                                  symbolTint: Palette.muted,
-                                  title: item.label,
-                                  subtitle: item.programPath ?? item.plistPath,
-                                  value: "", valueTint: .secondary,
-                                  subtitleTruncation: .middle) { EmptyView() }
+            VStack(alignment: .leading, spacing: 1) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { systemExpanded.toggle() }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(systemExpanded ? 90 : 0))
+                            .frame(width: 10)
+                        Text(L("부팅할 때 함께 올라오는 프로그램 %lld개", Int64(systemItems.count)))
+                            .font(.system(size: 11, weight: .semibold))
+                        Spacer(minLength: 0)
+                        Text(systemExpanded ? L("접기") : L("펼치기"))
+                            .font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 6)
+                    .background {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(systemExpanded ? Palette.apps.opacity(0.12)
+                                  : (systemHovering ? Color.primary.opacity(0.06) : .clear))
+                    }
+                    // 배경이 없는 부분도 눌리게 한다 — 글자만 눌리면 찾아서 눌러야 한다.
+                    .contentShape(RoundedRectangle(cornerRadius: 6))
                 }
-                Text("이 목록은 관리자 권한이 있어야 바꿀 수 있어 여기서는 보여주기만 해요")
-                    .font(.system(size: 10)).foregroundStyle(.tertiary)
-                    .padding(.horizontal, 7).padding(.top, 3)
-            } label: {
-                Text(L("부팅할 때 함께 올라오는 프로그램 %lld개", Int64(systemItems.count)))
-                    .font(.system(size: 11, weight: .semibold))
+                .buttonStyle(.plain)
+                .onHover { systemHovering = $0 }
+
+                if systemExpanded {
+                    VStack(spacing: 1) {
+                        ForEach(systemItems) { item in
+                            MetricRow(symbol: "gearshape.2",
+                                      symbolTint: Palette.muted,
+                                      title: item.label,
+                                      subtitle: item.programPath ?? item.plistPath,
+                                      value: "", valueTint: .secondary,
+                                      subtitleTruncation: .middle) { EmptyView() }
+                        }
+                    }
+                    Text("이 목록은 관리자 권한이 있어야 바꿀 수 있어 여기서는 보여주기만 해요")
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .padding(.horizontal, 7).padding(.top, 3)
+                }
             }
             .padding(.top, 2)
         }

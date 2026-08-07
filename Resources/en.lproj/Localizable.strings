@@ -217,3 +217,5 @@
 "이 목록은 관리자 권한이 있어야 바꿀 수 있어 여기서는 보여주기만 해요" = "Changing these needs an administrator, so this list is read-only here";
 "실행 파일 없음" = "Program missing";
 "빈 파일" = "Empty file";
+"펼치기" = "Show";
+"접기" = "Hide";
