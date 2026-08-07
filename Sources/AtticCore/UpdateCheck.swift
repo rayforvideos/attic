@@ -29,15 +29,12 @@ public struct AppVersion: Sendable, Equatable, Comparable, CustomStringConvertib
 public struct AvailableUpdate: Sendable, Equatable {
     public let version: String
     public let pageURL: URL
+    /// DMG 자산의 직접 링크. 없으면 앱 안에서 교체할 수 없어 페이지를 열어준다.
+    public let downloadURL: URL?
 }
 
-/// 새 버전이 나왔는지 확인한다. **내려받아 설치하지는 않는다** — 알려주고
-/// 릴리스 페이지를 열어줄 뿐이다.
-///
-/// 왜 이 방식인가: 앱 안에서 바이너리를 바꾸는 길(Sparkle 등)을 만들면, 전체
-/// 디스크 접근을 가진 앱에 자기 자신을 교체하는 경로가 생긴다. 검증을 조금이라도
-/// 허술하게 하면 그게 공격 표면이 된다. 사용자 수가 적고 업데이트가 드문 지금은
-/// 알려주는 것으로 충분하다.
+/// 새 버전이 나왔는지 확인한다. 받아서 교체하는 일은 `Updater`가 한다 —
+/// 여기서는 **무엇이 최신인지만** 알아낸다.
 ///
 /// **이 앱이 네트워크를 쓰는 유일한 곳이다.** 보내는 것은 아무것도 없다:
 /// 식별자·사용 기록·경로 모두 담지 않는 평범한 GET 하나다. 설정에서 끌 수 있다.
@@ -83,6 +80,11 @@ public struct UpdateChecker: Sendable {
         else { return nil }
         let page = (json["html_url"] as? String).flatMap(URL.init(string:))
             ?? releasesPage
-        return AvailableUpdate(version: latest.description, pageURL: page)
+        // .dmg 자산이 있으면 앱 안에서 받아 교체할 수 있다.
+        let dmg = (json["assets"] as? [[String: Any]])?
+            .compactMap { $0["browser_download_url"] as? String }
+            .first { $0.hasSuffix(".dmg") }
+            .flatMap(URL.init(string:))
+        return AvailableUpdate(version: latest.description, pageURL: page, downloadURL: dmg)
     }
 }

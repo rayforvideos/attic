@@ -229,3 +229,16 @@
 "받는 곳을 열어요" = "Opens the download page";
 "새 버전이 나오면 알려주기" = "Tell me when a new version is out";
 "이 앱이 통신하는 유일한 곳이에요 · 하루 한 번 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요" = "The only network access this app makes · once a day it reads the latest version number from GitHub, and sends nothing about you or what it found";
+"%@로 업데이트" = "Update to %@";
+"받아서 교체하고 다시 시작해요 · 옛 버전은 휴지통으로 가요" = "Downloads, replaces, and restarts · the old version goes to the Trash";
+"받는 중" = "Downloading";
+"확인 중" = "Verifying";
+"설치 중" = "Installing";
+"업데이트하지 못했어요 — %@" = "Couldn't update — %@";
+"받지 못했어요" = "Download failed";
+"받은 파일을 열 수 없어요" = "Couldn't open the downloaded file";
+"Developer ID 서명이 아니에요" = "Not signed with a Developer ID";
+"서명에 팀 정보가 없어요" = "The signature has no team information";
+"다른 개발자의 서명이에요 (%@)" = "Signed by a different developer (%@)";
+"공증을 확인할 수 없어요" = "Notarization could not be confirmed";
+"더 새 버전이 아니에요" = "Not a newer version";

@@ -66,6 +66,9 @@ struct PopoverView: View {
             isFirstRun: !model.hasEverScanned,
             onRecheckAccess: { model.recheckFullDiskAccess() },
             availableUpdate: model.availableUpdate,
+            updateProgress: model.updateProgress,
+            updateNote: model.updateNote,
+            onInstallUpdate: { Task { await model.installUpdate() } },
             trash: model.trash,
             isEmptyingTrash: model.isEmptyingTrash,
             onEmptyTrash: { Task { await model.emptyTrash() } },
@@ -113,6 +116,9 @@ struct PopoverBody: View {
     let isFirstRun: Bool
     let onRecheckAccess: () -> Void
     var availableUpdate: AvailableUpdate?
+    var updateProgress: String?
+    var updateNote: UserNote?
+    var onInstallUpdate: () -> Void = {}
     let trash: TrashContents?
     let isEmptyingTrash: Bool
     let onEmptyTrash: () -> Void
@@ -187,6 +193,7 @@ struct PopoverBody: View {
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: min(max(paneHeight, 44), 320))
 
+            if let updateNote { UserNoteLine(note: updateNote) }
             footer
         }
         .padding(13)
@@ -213,19 +220,23 @@ struct PopoverBody: View {
         HStack(spacing: 5) {
             // 새 버전은 조용히 한 줄로만 알린다 — 지금 하려는 일(공간 정리)을
             // 가리지 않는 자리다.
-            if let availableUpdate {
-                Button {
-                    NSWorkspace.shared.open(availableUpdate.pageURL)
-                } label: {
+            if let updateProgress {
+                HStack(spacing: 4) {
+                    ProgressView().controlSize(.small).scaleEffect(0.5)
+                    Text(updateProgress).font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+            } else if let availableUpdate {
+                Button { onInstallUpdate() } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: 10))
-                        Text(L("새 버전 %@", availableUpdate.version))
+                        Text(L("%@로 업데이트", availableUpdate.version))
                             .font(.system(size: 10.5, weight: .medium))
                     }
                     .foregroundStyle(Palette.apps)
                 }
                 .buttonStyle(.borderless)
-                .help("받는 곳을 열어요")
+                .help("받아서 교체하고 다시 시작해요 · 옛 버전은 휴지통으로 가요")
             }
             if notificationsUnavailable {
                 Image(systemName: "bell.slash")

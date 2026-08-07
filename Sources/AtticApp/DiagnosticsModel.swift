@@ -33,6 +33,9 @@ final class DiagnosticsModel {
         UserDefaults.standard.bool(forKey: "hasEverScanned")
     /// 새 버전이 나왔으면 그 정보. 알려주기만 하고 내려받지는 않는다.
     private(set) var availableUpdate: AvailableUpdate?
+    /// 업데이트 진행 상태. nil이면 진행 중이 아니다.
+    private(set) var updateProgress: String?
+    private(set) var updateNote: UserNote?
     private(set) var trash: TrashContents?
     private(set) var isEmptyingTrash = false
     /// 스캔 도중의 정직한 진행 상황. 무한 스피너 대신 몇 개 중 몇 개째, 지금 뭘 재는지를
@@ -566,6 +569,52 @@ final class DiagnosticsModel {
         for (path, bytes) in measured { cache.record(path: path, bytes: bytes) }
         cache.forgetMissing()
         JSONFileStore.update(at: sizeCacheURL, default: cache) { $0 = cache }
+    }
+
+    /// 새 버전을 내려받아 교체하고 다시 시작한다.
+    ///
+    /// 서명(팀 ID)·공증·버전을 모두 확인한 뒤에만 교체한다 — 확인할 수 없는 것은
+    /// 설치하지 않는다. 옛 버전은 지우지 않고 휴지통으로 보낸다.
+    func installUpdate() async {
+        guard let update = availableUpdate, updateProgress == nil else { return }
+        guard let dmg = update.downloadURL else {
+            // 받을 파일을 모르면 페이지를 열어준다 — 손으로 받는 길은 남긴다.
+            NSWorkspace.shared.open(update.pageURL)
+            return
+        }
+        updateNote = nil
+        updateProgress = L("받는 중")
+        do {
+            _ = try await Updater().install(from: dmg) { [weak self] step in
+                Task { @MainActor in self?.updateProgress = L(step) }
+            }
+            updateProgress = nil
+            restartForUpdate()
+        } catch {
+            updateProgress = nil
+            let reason = (error as? Updater.Failure).map(Self.describe) ?? L("받지 못했어요")
+            updateNote = .fail(L("업데이트하지 못했어요 — %@", reason))
+        }
+    }
+
+    static func describe(_ failure: Updater.Failure) -> String {
+        switch failure {
+        case .downloadFailed: L("받지 못했어요")
+        case .mountFailed, .appNotFoundInImage: L("받은 파일을 열 수 없어요")
+        case .signatureMismatch(let why), .notNotarized(let why): why
+        case .notNewer(let why): why
+        case .replaceFailed(let why): why
+        }
+    }
+
+    /// 교체한 뒤 새 인스턴스를 띄우고 자신을 끝낸다.
+    private func restartForUpdate() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL,
+                                           configuration: configuration) { _, _ in
+            Task { @MainActor in NSApp.terminate(nil) }
+        }
     }
 
     /// 선택한 항목만 휴지통으로 옮긴다 — 삭제하지 않는다. 결과는 사람 말로 `spaceNote`에.
