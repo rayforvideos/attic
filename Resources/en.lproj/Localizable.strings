@@ -244,3 +244,5 @@
 "지금 확인" = "Check now";
 "새 버전 %@이 있어요" = "Version %@ is available";
 "이 앱이 통신하는 유일한 곳이에요 · 실행할 때와 여섯 시간마다 GitHub에서 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않아요" = "The only network access this app makes · on launch and every six hours it reads the latest version number from GitHub, and sends nothing about you or what it found";
+"옮기는 중이에요 · 끝난 뒤에 비워주세요" = "Still moving files · empty the Trash when it finishes";
+"정리가 끝난 뒤에 업데이트해주세요" = "Finish cleaning up first, then update";

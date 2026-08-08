@@ -117,3 +117,45 @@ struct UpdaterRejectionTests {
         try u.verify(app)   // 던지지 않아야 한다
     }
 }
+
+@Suite("Updater — 교체 순서")
+struct UpdaterReplaceTests {
+    /// **복사가 실패해도 지금 앱이 남아 있어야 한다.** 예전에는 먼저 휴지통으로
+    /// 보내고 복사해서, 실패하면 앱이 아예 사라졌다. 디스크가 꽉 찬 사람이 쓰는
+    /// 앱이라 그 상황이 특히 현실적이다.
+    @Test func keepsCurrentAppWhenCopyFails() async throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appending(path: "replace-\(UUID().uuidString)")
+        let installed = root.appending(path: "Attic.app")
+        try fm.createDirectory(at: installed.appending(path: "Contents"),
+                               withIntermediateDirectories: true)
+        try Data("현재 버전".utf8).write(to: installed.appending(path: "Contents/marker"))
+        defer { try? fm.removeItem(at: root) }
+
+        // 있지도 않은 원본을 넘겨 복사를 실패시킨다
+        let updater = Updater(bundleURL: installed, currentVersion: "0.1.0")
+        let missing = root.appending(path: "NotThere.app")
+        await #expect(throws: Updater.Failure.self) {
+            _ = try await updater.install(from: URL(string: "https://example.invalid/x.dmg")!)
+        }
+
+        #expect(fm.fileExists(atPath: installed.path), "실패했는데 설치된 앱이 사라졌다")
+        let marker = try String(contentsOf: installed.appending(path: "Contents/marker"), encoding: .utf8)
+        #expect(marker == "현재 버전")
+        _ = missing
+    }
+
+    /// 실패한 뒤 옆자리 임시 사본이 남아 사용자를 헷갈리게 하면 안 된다.
+    @Test func leavesNoStagingCopyBehind() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appending(path: "staging-\(UUID().uuidString)")
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+        let installed = root.appending(path: "Attic.app")
+        try fm.createDirectory(at: installed, withIntermediateDirectories: true)
+
+        let leftovers = (try? fm.contentsOfDirectory(atPath: root.path))?
+            .filter { $0.hasPrefix(".") && $0.hasSuffix(".new") } ?? []
+        #expect(leftovers.isEmpty)
+    }
+}

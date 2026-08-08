@@ -11,7 +11,6 @@ struct PopoverView: View {
     @State private var reapNote: UserNote?
     @State private var reaping: Set<String> = []
     @State private var togglingAgents: Set<String> = []
-    @State private var isMovingToTrash = false
 
     var body: some View {
         PopoverBody(
@@ -31,7 +30,7 @@ struct PopoverView: View {
             scanStartedAt: model.scanStartedAt,
             spaceScanCompletedAt: model.spaceScanCompletedAt,
             spaceResultsFromDisk: model.spaceResultsFromDisk,
-            isMovingToTrash: isMovingToTrash,
+            isMovingToTrash: model.isMovingToTrash,
             spaceNote: model.spaceNote,
             notificationsUnavailable: model.notifier.fallbackActive,
             launchAgents: model.launchAgents,
@@ -55,11 +54,9 @@ struct PopoverView: View {
             },
             onScanSpace: { Task { await model.scanSpace() } },
             onMoveToTrash: { items in
-                isMovingToTrash = true
-                Task {
-                    await model.moveToTrash(items)
-                    isMovingToTrash = false
-                }
+                // 진행 상태는 모델이 들고 있다 — 뷰와 모델 두 곳에 두면 다른
+                // 경로로 들어올 때 한쪽만 잠긴다.
+                Task { await model.moveToTrash(items) }
             },
             onSpaceTabAppear: { model.markSpaceResultsSeen() },
             hasFullDiskAccess: model.hasFullDiskAccess,

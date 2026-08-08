@@ -130,16 +130,35 @@ public struct Updater: Sendable {
         logger.info("update verified: team \(team, privacy: .public) version \(version, privacy: .public)")
     }
 
-    /// 지금 앱을 휴지통으로 보내고 새 것을 그 자리에 놓는다. 지우지 않는 이유는
-    /// 이 앱이 사용자 파일에 하는 약속과 같다 — 되돌릴 수 있어야 한다.
+    /// 새 앱을 그 자리에 놓는다.
+    ///
+    /// **순서가 중요하다.** 예전에는 지금 앱을 먼저 휴지통으로 보내고 복사했는데,
+    /// 그러면 복사가 실패했을 때(디스크 부족, 이미지 분리, 권한) 앱이 아예 사라진
+    /// 채로 끝난다. 디스크가 꽉 찬 사람이 쓰는 앱이라 그 상황이 특히 현실적이다.
+    ///
+    /// 지금은 옆자리에 먼저 복사해 두고, 그게 성공한 뒤에야 원래 것을 치운다.
+    /// 마지막 단계는 같은 볼륨 안에서의 이름 바꾸기라 사실상 실패하지 않는다.
+    /// 옛 버전은 지우지 않고 휴지통으로 보낸다 — 이 앱이 사용자 파일에 하는
+    /// 약속과 같다.
     private func replace(with newApp: URL) throws {
         let fm = FileManager.default
+        let staging = bundleURL.deletingLastPathComponent()
+            .appending(path: ".\(bundleURL.lastPathComponent).new")
+        try? fm.removeItem(at: staging)
+
+        do {
+            try fm.copyItem(at: newApp, to: staging)
+        } catch {
+            throw Failure.replaceFailed(error.localizedDescription)
+        }
         do {
             if fm.fileExists(atPath: bundleURL.path) {
                 try fm.trashItem(at: bundleURL, resultingItemURL: nil)
             }
-            try fm.copyItem(at: newApp, to: bundleURL)
+            try fm.moveItem(at: staging, to: bundleURL)
         } catch {
+            // 여기서 실패하면 옆자리 사본이 남아 사용자를 헷갈리게 한다 — 치운다.
+            try? fm.removeItem(at: staging)
             throw Failure.replaceFailed(error.localizedDescription)
         }
     }

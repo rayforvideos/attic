@@ -38,6 +38,10 @@ final class DiagnosticsModel {
     private(set) var updateNote: UserNote?
     private(set) var trash: TrashContents?
     private(set) var isEmptyingTrash = false
+    /// 휴지통으로 옮기는 중. 이 값은 뷰가 아니라 모델이 들고 있어야 한다 —
+    /// 옮기는 동안 휴지통을 비우거나 앱을 교체하는 것을 막아야 하는데, 그 판단이
+    /// 뷰에 흩어져 있으면 다른 경로(도커 메뉴 등)로 들어올 때 뚫린다.
+    private(set) var isMovingToTrash = false
     /// 스캔 도중의 정직한 진행 상황. 무한 스피너 대신 몇 개 중 몇 개째, 지금 뭘 재는지를
     /// 보여주기 위함이다. 스캔 중이 아니면 nil.
     private(set) var scanProgress: ScanProgress?
@@ -249,6 +253,11 @@ final class DiagnosticsModel {
     /// 이 기능의 핵심이다 — 숫자가 움직이는 걸 봐야 정리했다는 감각이 생긴다.
     func emptyTrash() async {
         guard !isEmptyingTrash else { return }
+        // 옮기는 중에 비우면 방금 옮긴 것이 확인할 새도 없이 영구 삭제된다.
+        guard !isMovingToTrash else {
+            spaceNote = .fail(L("옮기는 중이에요 · 끝난 뒤에 비워주세요"))
+            return
+        }
         isEmptyingTrash = true
         defer { isEmptyingTrash = false }
 
@@ -581,6 +590,12 @@ final class DiagnosticsModel {
     /// 설치하지 않는다. 옛 버전은 지우지 않고 휴지통으로 보낸다.
     func installUpdate() async {
         guard let update = availableUpdate, updateProgress == nil else { return }
+        // 업데이트는 앱을 교체하고 다시 시작한다. 파일을 옮기거나 지우는 중에
+        // 프로세스가 죽으면 사용자는 무엇이 끝났고 무엇이 안 끝났는지 알 수 없다.
+        guard !isMovingToTrash, !isEmptyingTrash else {
+            updateNote = .fail(L("정리가 끝난 뒤에 업데이트해주세요"))
+            return
+        }
         guard let dmg = update.downloadURL else {
             // 받을 파일을 모르면 페이지를 열어준다 — 손으로 받는 길은 남긴다.
             NSWorkspace.shared.open(update.pageURL)
@@ -626,11 +641,14 @@ final class DiagnosticsModel {
     /// "훑는 중"으로 바뀌어 옮기기가 오래 걸리는 것처럼 보인다(검수에서 확인).
     /// 옮겨진 항목만 목록에서 빼고, 나머지는 그대로 둔다.
     func moveToTrash(_ items: [ReclaimItem]) async {
+        guard !isMovingToTrash else { return }
         // 빈 선택은 실패가 아니다 — "옮기지 못했어요"라고 하면 거짓 경고가 된다.
         guard !items.isEmpty else {
             spaceNote = .fail(L("먼저 비울 항목을 골라주세요"))
             return
         }
+        isMovingToTrash = true
+        defer { isMovingToTrash = false }
         let result = await Reclaimer().moveToTrash(items, guard: reclaimGuard,
                                                     staleThresholdDays: staleDays)
         let skipped = result.refused.count + result.failed.count

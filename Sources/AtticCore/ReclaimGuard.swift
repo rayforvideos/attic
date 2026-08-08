@@ -416,10 +416,41 @@ public struct ReclaimGuard: Sendable {
     /// 큰 파일은 **사용자가 만든 것**을 찾는 기능이다. `~/Library` 안의 큰 것은
     /// 앱 데이터·캐시라 다른 종류가 이미 다루고, 여기서 보여주면 같은 것이 두 번
     /// 뜨거나 앱 데이터를 사용자 파일로 오인하게 만든다(테스트가 잡아냈다).
+    /// 홈 안에서 사람이 만든 **파일 하나**만 후보다.
+    ///
+    /// 예전에는 위치만 봤다. 스캐너가 파일만 넘기니 사고는 없었지만, 가드는
+    /// 스캐너를 믿으면 안 된다 — 이 함수는 홈 자체와 ~/Documents 같은 최상위
+    /// 폴더를 통과시키고 있었다(적대적 테스트에서 드러났다). 그런 경로가 한 번만
+    /// 들어와도 사용자의 문서 폴더가 통째로 휴지통으로 간다.
     private func checkLargeFile(path: String) -> ReclaimRefusal? {
         if matchesRoot(path, root: "\(home)/Library") { return .protectedLocation }
+
+        let normalized = path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path
+        // 홈 자체
+        if normalized.caseInsensitiveCompare(home) == .orderedSame { return .protectedLocation }
+        // 홈 바로 아래의 표준 폴더들(이름이 같은 사용자 폴더도 함께 막는다)
+        let parent = (normalized as NSString).deletingLastPathComponent
+        if parent.caseInsensitiveCompare(home) == .orderedSame,
+           Self.homeTopLevelFolders.contains(where: {
+               (normalized as NSString).lastPathComponent.caseInsensitiveCompare($0) == .orderedSame
+           }) {
+            return .protectedLocation
+        }
+        // 실제로 폴더면 거부한다. 큰 "파일"을 지운다고 해놓고 폴더를 통째로
+        // 옮기면 사용자가 무엇을 잃는지 알 수 없다.
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: normalized, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            return .protectedLocation
+        }
         return nil
     }
+
+    /// 홈 바로 아래의 표준 폴더. 통째로 손대면 안 되는 것들이다.
+    static let homeTopLevelFolders = [
+        "Documents", "Desktop", "Downloads", "Movies", "Music", "Pictures",
+        "Library", "Public", "Applications", "Sites", "Developer",
+    ]
 
     private func checkNodeModules(
         path: String,
