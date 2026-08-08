@@ -9,82 +9,181 @@
 <meta property="og:title" content="Attic">
 <meta property="og:description" content="쓰지 않는데 자리만 차지하는 파일을 찾아드려요">
 <meta property="og:image" content="screenshot.png">
+<meta name="theme-color" content="#0e1115">
 <style>
   :root {
-    --bg: #14181d;
-    --surface: #1b2027;
-    --line: #262d36;
-    --text: #eef1f5;
-    --dim: #98a2b0;
+    --bg: #0e1115;
+    --bg-soft: #141920;
+    --surface: #171d25;
+    --surface-2: #1c232c;
+    --line: #232b35;
+    --line-soft: #1b222b;
+    --text: #f2f5f8;
+    --dim: #94a1b2;
+    --dimmer: #6b7684;
     --accent: #7fb2e5;
     --accent-strong: #a9cdf3;
+    --accent-dim: rgba(127, 178, 229, 0.12);
+    --radius: 14px;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
           "Segoe UI", system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  a { color: var(--accent); text-decoration: none; }
+  a { color: var(--accent); text-decoration: none; transition: color .18s ease; }
   a:hover { color: var(--accent-strong); }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 28px; }
 
+  /* ── 헤더 ─────────────────────────────────────────── */
   header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 22px 0; gap: 16px;
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(14, 17, 21, .72);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid transparent; transition: border-color .25s ease;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 17px; }
-  .brand img { width: 28px; height: 28px; border-radius: 7px; }
-  nav { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+  header.scrolled { border-bottom-color: var(--line-soft); }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
+  .brand img { width: 26px; height: 26px; border-radius: 6px; }
+  nav { display: flex; align-items: center; gap: 20px; font-size: 14px; }
   nav a { color: var(--dim); }
   nav a:hover { color: var(--text); }
   .lang { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .lang button {
-    background: none; border: 0; color: var(--dim); font: inherit; font-size: 13px;
-    padding: 5px 11px; cursor: pointer;
+    background: none; border: 0; color: var(--dimmer); font: inherit; font-size: 12.5px;
+    padding: 5px 10px; cursor: pointer; transition: background .18s ease, color .18s ease;
   }
-  .lang button[aria-pressed="true"] { background: var(--surface); color: var(--text); }
-
-  .hero { padding: 56px 0 40px; text-align: center; }
-  .hero h1 {
-    font-size: clamp(30px, 5vw, 46px); line-height: 1.25; margin: 0 0 18px;
-    letter-spacing: -0.02em; font-weight: 700;
+  .lang button:hover { color: var(--text); }
+  .lang button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+  .nav-cta {
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 13px;
+    color: var(--text) !important; font-size: 13px; transition: border-color .18s, background .18s;
   }
-  .hero p.sub { font-size: 17px; color: var(--dim); margin: 0 auto 30px; max-width: 620px; }
-  .cta {
-    display: inline-block; background: var(--accent); color: #0d1116;
-    font-weight: 650; font-size: 16px; padding: 13px 26px; border-radius: 10px;
+  .nav-cta:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+  /* ── 히어로 ───────────────────────────────────────── */
+  .hero { position: relative; padding: 92px 0 20px; text-align: center; }
+  .hero::before {
+    content: ""; position: absolute; inset: -120px 0 auto 50%;
+    width: 900px; height: 620px; transform: translateX(-50%);
+    background: radial-gradient(50% 50% at 50% 50%, rgba(127,178,229,.14), transparent 70%);
+    pointer-events: none;
   }
-  .cta:hover { background: var(--accent-strong); color: #0d1116; }
-  .meta { margin-top: 13px; font-size: 13px; color: var(--dim); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--surface);
+    border-radius: 999px; padding: 5px 13px; font-size: 12.5px; color: var(--dim);
+    margin-bottom: 26px;
+  }
+  .eyebrow b { color: var(--accent); font-weight: 600; }
+  h1 {
+    font-size: clamp(32px, 5.4vw, 54px); line-height: 1.2; margin: 0 0 20px;
+    letter-spacing: -.03em; font-weight: 720;
+  }
+  h1 .grad {
+    background: linear-gradient(180deg, #ffffff 20%, #9fb4c9 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { font-size: 17.5px; color: var(--dim); margin: 0 auto 34px; max-width: 640px; }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; font-weight: 620; font-size: 15.5px;
+    padding: 13px 26px; border-radius: 11px; transition: transform .16s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn-primary { background: var(--accent); color: #0b0f14; box-shadow: 0 8px 30px rgba(127,178,229,.22); }
+  .btn-primary:hover { background: var(--accent-strong); color: #0b0f14; transform: translateY(-1px); box-shadow: 0 12px 38px rgba(127,178,229,.3); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+  .meta { margin-top: 15px; font-size: 13px; color: var(--dimmer); }
 
-  .shot { margin: 44px auto 0; max-width: 420px; }
-  .shot img {
-    width: 100%; height: auto; display: block; border-radius: 14px;
-    border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  .shot-frame { position: relative; margin: 58px auto 0; width: min(420px, 100%); }
+  .shot-frame::after {
+    content: ""; position: absolute; inset: auto 8% -28px 8%; height: 60px;
+    background: radial-gradient(50% 50% at 50% 0%, rgba(127,178,229,.22), transparent 70%);
+    filter: blur(6px); pointer-events: none;
+  }
+  .shot-frame img {
+    width: 100%; height: auto; display: block; border-radius: 18px;
+    border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6);
   }
 
-  section { padding: 52px 0; border-top: 1px solid var(--line); }
-  h2 { font-size: 22px; margin: 0 0 8px; letter-spacing: -0.01em; }
-  .lead { color: var(--dim); margin: 0 0 26px; }
+  /* ── 지표 ─────────────────────────────────────────── */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line-soft);
+           border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; margin-top: 76px; }
+  .stat { background: var(--bg-soft); padding: 24px 20px; text-align: center; }
+  .stat b { display: block; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .stat span { font-size: 13px; color: var(--dimmer); }
+  @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
-  .card h3 { margin: 0 0 6px; font-size: 15px; }
-  .card p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.65; }
+  /* ── 섹션 ─────────────────────────────────────────── */
+  section { padding: 96px 0; }
+  section + section { border-top: 1px solid var(--line-soft); }
+  .head { max-width: 640px; margin-bottom: 40px; }
+  .head.center { margin-left: auto; margin-right: auto; text-align: center; }
+  .kicker { font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h2 { font-size: clamp(24px, 3vw, 32px); margin: 10px 0 12px; letter-spacing: -.02em; font-weight: 700; }
+  .lead { color: var(--dim); margin: 0; font-size: 16.5px; }
 
-  ul.rules { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
-  ul.rules li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
-  ul.rules strong { display: block; margin-bottom: 4px; font-size: 15px; }
-  ul.rules span { color: var(--dim); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .card {
+    background: linear-gradient(180deg, var(--surface) 0%, var(--bg-soft) 100%);
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
+    transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+  }
+  .card:hover { transform: translateY(-3px); border-color: #2f3a47; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  .card .ico {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--accent-dim);
+    display: grid; place-items: center; margin-bottom: 14px;
+  }
+  .card .ico svg { width: 17px; height: 17px; stroke: var(--accent); fill: none; stroke-width: 1.7; }
+  .card h3 { margin: 0 0 7px; font-size: 15.5px; font-weight: 640; }
+  .card p { margin: 0; color: var(--dim); font-size: 14.2px; line-height: 1.68; }
 
-  footer { padding: 36px 0 60px; color: var(--dim); font-size: 14px; text-align: center; border-top: 1px solid var(--line); }
-  footer a { color: var(--dim); text-decoration: underline; }
+  .rules { display: grid; gap: 14px; }
+  .rule {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px 22px; transition: border-color .22s ease;
+  }
+  .rule:hover { border-color: #2f3a47; }
+  .rule .mark {
+    flex: none; width: 24px; height: 24px; border-radius: 7px; background: var(--accent-dim);
+    display: grid; place-items: center; margin-top: 2px;
+  }
+  .rule .mark svg { width: 13px; height: 13px; stroke: var(--accent); fill: none; stroke-width: 2.4; }
+  .rule b { display: block; font-size: 15.5px; font-weight: 640; margin-bottom: 3px; }
+  .rule p { margin: 0; color: var(--dim); font-size: 14.2px; }
+
+  .cta-band {
+    text-align: center; background: linear-gradient(180deg, var(--surface) 0%, var(--bg-soft) 100%);
+    border: 1px solid var(--line); border-radius: 20px; padding: 56px 28px;
+  }
+  .cta-band h2 { margin-top: 0; }
+
+  footer { padding: 40px 0 64px; color: var(--dimmer); font-size: 13.5px; text-align: center; border-top: 1px solid var(--line-soft); }
+  footer a { color: var(--dimmer); }
   footer a:hover { color: var(--text); }
+  .foot-links { display: flex; gap: 18px; justify-content: center; margin-bottom: 10px; }
+
+  /* ── 등장 애니메이션 ──────────────────────────────────
+     **기본값은 "보이는 상태"다.** opacity:0을 CSS에 그냥 깔면 JS가 늦거나
+     막혔을 때 페이지가 빈 화면이 된다(실제로 그렇게 만들었다가 확인했다).
+     JS가 켜졌을 때만 html.anim을 붙여 숨겼다가 올린다. */
+  html.anim .reveal {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity .6s cubic-bezier(.2,.7,.3,1), transform .6s cubic-bezier(.2,.7,.3,1);
+  }
+  html.anim .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .card, .btn { transition: none !important; }
+    html.anim .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
 
   [data-en] { display: none; }
   html[lang="en"] [data-ko] { display: none; }
@@ -93,70 +192,104 @@
 </head>
 <body>
 
-<div class="wrap">
-  <header>
-    <span class="brand"><img src="icon.png" alt=""> Attic</span>
+<header id="top-bar">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.png" alt=""> Attic</a>
     <nav>
-      <a href="https://github.com/rayforvideos/attic">
-        <span data-ko>소스</span><span data-en>Source</span>
-      </a>
-      <a href="https://github.com/rayforvideos/attic/releases">
-        <span data-ko>변경 내역</span><span data-en>Releases</span>
-      </a>
+      <a href="#what"><span data-ko>기능</span><span data-en>Features</span></a>
+      <a href="#trust"><span data-ko>원칙</span><span data-en>Principles</span></a>
+      <a href="https://github.com/rayforvideos/attic">GitHub</a>
       <span class="lang">
         <button type="button" data-set-lang="ko" aria-pressed="true">한국어</button>
-        <button type="button" data-set-lang="en" aria-pressed="false">English</button>
+        <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
       </span>
+      <a class="nav-cta" href="https://github.com/rayforvideos/attic/releases/latest">
+        <span data-ko>다운로드</span><span data-en>Download</span>
+      </a>
     </nav>
-  </header>
+  </div>
+</header>
 
+<div class="wrap">
   <div class="hero">
-    <h1>
-      <span data-ko>쓰지 않는데<br>자리만 차지하는 파일을 찾아드려요</span>
-      <span data-en>Find the files you stopped using<br>but never deleted</span>
+    <span class="eyebrow reveal">
+      <b>macOS</b>
+      <span data-ko>메뉴바에서 조용히 돕니다</span><span data-en>Lives quietly in your menu bar</span>
+    </span>
+    <h1 class="reveal">
+      <span data-ko><span class="grad">쓰지 않는데<br>자리만 차지하는 파일</span>을 찾아드려요</span>
+      <span data-en><span class="grad">Find the files you stopped using</span><br>but never deleted</span>
     </h1>
-    <p class="sub">
+    <p class="sub reveal">
       <span data-ko>맥 곳곳에 숨어 있는 앱 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드를 찾습니다.
         고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.</span>
       <span data-en>App caches, stale build output, and downloads you forgot are scattered all over your Mac.
         Attic finds them. Only what you pick goes to the Trash, and nothing is deleted on its own.</span>
     </p>
-    <a class="cta" href="https://github.com/rayforvideos/attic/releases/latest">
-      <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
-    </a>
-    <p class="meta">
+    <div class="actions reveal">
+      <a class="btn btn-primary" href="https://github.com/rayforvideos/attic/releases/latest">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/rayforvideos/attic">
+        <span data-ko>소스 보기</span><span data-en>View source</span>
+      </a>
+    </div>
+    <p class="meta reveal">
       <span data-ko>macOS 26 이상 · Apple 공증 완료 · 무료</span>
       <span data-en>macOS 26 or later · Notarized by Apple · Free</span>
     </p>
 
-    <div class="shot">
+    <div class="shot-frame reveal">
       <img src="screenshot.png" alt="Attic">
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat">
+        <b data-count="111">0</b>
+        <span data-ko>GB · 개발자 맥에서 찾은 양</span><span data-en>GB found on one developer Mac</span>
+      </div>
+      <div class="stat">
+        <b>0</b>
+        <span data-ko>자동으로 지우는 파일</span><span data-en>files deleted on its own</span>
+      </div>
+      <div class="stat">
+        <b data-count="176">0</b>
+        <span data-ko>개 테스트가 지키는 규칙</span><span data-en>tests guarding the rules</span>
+      </div>
     </div>
   </div>
 
-  <section>
-    <h2><span data-ko>무엇을 찾나요</span><span data-en>What it finds</span></h2>
-    <p class="lead">
-      <span data-ko>지워도 되는 것과 아닌 것을 구분해서, 종류별로 모아 보여줍니다.</span>
-      <span data-en>Grouped by kind, with what is safe to remove kept separate from what is not.</span>
-    </p>
+  <section id="what">
+    <div class="head reveal">
+      <div class="kicker"><span data-ko>찾는 것</span><span data-en>What it finds</span></div>
+      <h2><span data-ko>어디에 쌓였는지 대신 찾아봅니다</span><span data-en>It knows where things pile up</span></h2>
+      <p class="lead">
+        <span data-ko>지워도 다시 만들어지는 것과, 지우면 끝인 것을 나눠서 보여줍니다.</span>
+        <span data-en>What rebuilds itself is kept separate from what is gone for good.</span>
+      </p>
+    </div>
     <div class="grid">
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div>
         <h3><span data-ko>앱이 만든 캐시</span><span data-en>App caches</span></h3>
-        <p><span data-ko>브라우저 기반 앱이 쌓아둔 웹 캐시, 앱마다 만드는 임시 파일. 지워도 다시 만들어집니다.</span>
-           <span data-en>Web caches from Electron apps and per-app temporary files. They come back on their own.</span></p>
+        <p><span data-ko>브라우저 기반 앱이 쌓아둔 웹 캐시와 앱마다 만드는 임시 파일. 지워도 다시 만들어집니다.</span>
+           <span data-en>Web caches from browser-based apps and per-app temporary files. They come back on their own.</span></p>
       </div>
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="m15 5 4 4"/><path d="M3 21v-4L16 4a2.8 2.8 0 0 1 4 4L7 21z"/></svg></div>
         <h3><span data-ko>오래된 빌드 산출물</span><span data-en>Stale build output</span></h3>
         <p><span data-ko>Xcode 빌드 결과, 기기 지원 파일, 패키지 매니저 캐시, 안 쓰는 node_modules.</span>
            <span data-en>Xcode derived data, device support files, package manager caches, unused node_modules.</span></p>
       </div>
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg></div>
         <h3><span data-ko>받아두고 잊은 다운로드</span><span data-en>Forgotten downloads</span></h3>
-        <p><span data-ko>설치하고 남은 파일, 오래된 스크린샷, 큰 파일. 되돌릴 수 없는 것이라 자동으로 선택되지 않습니다.</span>
-           <span data-en>Installers you already used, old screenshots, large files. Never auto-selected, since deleting them is permanent.</span></p>
+        <p><span data-ko>설치하고 남은 파일, 오래된 스크린샷, 큰 파일. 되돌릴 수 없어서 자동으로 선택되지 않습니다.</span>
+           <span data-en>Installers you already used, old screenshots, large files. Never auto-selected, because deleting them is permanent.</span></p>
       </div>
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6 2 2 0 1 1 14 4.6a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.6 1z"/></svg></div>
         <h3><span data-ko>숨어서 도는 것들</span><span data-en>Things running quietly</span></h3>
         <p><span data-ko>로그인·부팅할 때 함께 올라오는 프로그램과, 지워진 앱이 남긴 자동 실행 등록.</span>
            <span data-en>Programs that launch with your Mac, and startup entries left behind by software you removed.</span></p>
@@ -164,77 +297,184 @@
     </div>
   </section>
 
-  <section>
-    <h2><span data-ko>지키는 것</span><span data-en>What it promises</span></h2>
-    <p class="lead">
-      <span data-ko>디스크를 맡기는 앱이라, 무엇을 하지 않는지가 먼저입니다.</span>
-      <span data-en>You are handing it your disk, so what it will not do comes first.</span>
-    </p>
-    <ul class="rules">
-      <li>
-        <strong><span data-ko>고른 것만 휴지통으로 옮깁니다</span><span data-en>Only what you pick, and only to the Trash</span></strong>
-        <span data-ko>앱이 알아서 지우는 일은 없습니다. 되돌릴 수 있어야 하니까요.</span>
-        <span data-en>Nothing is deleted on its own. You need to be able to undo it.</span>
-      </li>
-      <li>
-        <strong><span data-ko>숫자를 지어내지 않습니다</span><span data-en>It never invents a number</span></strong>
-        <span data-ko>크기를 재지 못한 항목은 목록에서 빼고 그 사실을 알립니다. 끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지 않습니다.</span>
-        <span data-en>If it could not measure something, it leaves it out and says so. If a folder could not be fully read, it will not claim there is nothing to clean.</span>
-      </li>
-      <li>
-        <strong><span data-ko>옮기기 직전에 다시 잽니다</span><span data-en>It measures again right before moving</span></strong>
-        <span data-ko>스캔한 값은 오래됐을 수 있습니다. 실제로 비는 용량은 그 순간에 다시 잰 숫자입니다.</span>
-        <span data-en>A scan result can be stale. The freed space you see is measured at the moment it happens.</span>
-      </li>
-      <li>
-        <strong><span data-ko>되돌릴 수 없는 것은 그렇다고 말합니다</span><span data-en>It tells you when something cannot come back</span></strong>
-        <span data-ko>캐시는 다시 만들어지지만 받은 사진은 그렇지 않습니다. 아는 만큼만 말합니다.</span>
-        <span data-en>A cache rebuilds itself. A photo someone sent you does not. It only claims what it knows.</span>
-      </li>
-    </ul>
+  <section id="trust">
+    <div class="head center reveal">
+      <div class="kicker"><span data-ko>원칙</span><span data-en>Principles</span></div>
+      <h2><span data-ko>디스크를 맡기는 앱이니까</span><span data-en>You are handing it your disk</span></h2>
+      <p class="lead">
+        <span data-ko>무엇을 할 수 있는지보다, 무엇을 하지 않는지가 먼저입니다.</span>
+        <span data-en>What it will not do matters more than what it can.</span>
+      </p>
+    </div>
+    <div class="rules">
+      <div class="rule reveal">
+        <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+        <div>
+          <b><span data-ko>고른 것만 휴지통으로 옮깁니다</span><span data-en>Only what you pick, and only to the Trash</span></b>
+          <p><span data-ko>앱이 알아서 지우는 일은 없습니다. 되돌릴 수 있어야 하니까요.</span>
+             <span data-en>Nothing is deleted on its own. You need to be able to undo it.</span></p>
+        </div>
+      </div>
+      <div class="rule reveal">
+        <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+        <div>
+          <b><span data-ko>숫자를 지어내지 않습니다</span><span data-en>It never invents a number</span></b>
+          <p><span data-ko>크기를 재지 못한 항목은 목록에서 빼고 그 사실을 알립니다. 끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지 않습니다.</span>
+             <span data-en>If it could not measure something, it leaves it out and says so. If a folder could not be fully read, it will not claim there is nothing to clean.</span></p>
+        </div>
+      </div>
+      <div class="rule reveal">
+        <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+        <div>
+          <b><span data-ko>옮기기 직전에 다시 잽니다</span><span data-en>It measures again right before moving</span></b>
+          <p><span data-ko>스캔한 값은 오래됐을 수 있습니다. 실제로 비는 용량은 그 순간에 다시 잰 숫자입니다.</span>
+             <span data-en>A scan result can be stale. The freed space you see is measured at the moment it happens.</span></p>
+        </div>
+      </div>
+      <div class="rule reveal">
+        <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+        <div>
+          <b><span data-ko>되돌릴 수 없는 것은 그렇다고 말합니다</span><span data-en>It tells you when something cannot come back</span></b>
+          <p><span data-ko>캐시는 다시 만들어지지만 받은 사진은 그렇지 않습니다. 아는 만큼만 말합니다.</span>
+             <span data-en>A cache rebuilds itself. A photo someone sent you does not. It only claims what it knows.</span></p>
+        </div>
+      </div>
+      <div class="rule reveal">
+        <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+        <div>
+          <b><span data-ko>허용 목록으로만 움직입니다</span><span data-en>It moves only inside an allowlist</span></b>
+          <p><span data-ko>손댈 수 있는 위치를 미리 정해두고, 그 밖은 전부 거부합니다. 실행 직전에 한 번 더 검증합니다.</span>
+             <span data-en>The places it may touch are fixed in advance, everything else is refused, and it verifies once more right before acting.</span></p>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section>
-    <h2><span data-ko>권한과 통신</span><span data-en>Permissions and network</span></h2>
+  <section id="privacy">
+    <div class="head reveal">
+      <div class="kicker"><span data-ko>권한과 통신</span><span data-en>Permissions and network</span></div>
+      <h2><span data-ko>무엇을 요구하고, 무엇을 보내지 않는지</span><span data-en>What it asks for, and what it never sends</span></h2>
+    </div>
     <div class="grid">
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/></svg></div>
         <h3><span data-ko>전체 디스크 접근</span><span data-en>Full Disk Access</span></h3>
         <p><span data-ko>캐시를 찾으려면 다른 앱의 폴더를 봐야 하고, macOS는 그것을 앱마다 따로 묻습니다. 한 번 허용하면 그 뒤로는 묻지 않습니다.</span>
            <span data-en>Finding caches means looking inside other apps' folders, and macOS asks for each one separately. Grant it once and the prompts stop.</span></p>
       </div>
-      <div class="card">
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg></div>
         <h3><span data-ko>네트워크</span><span data-en>Network</span></h3>
         <p><span data-ko>새 버전 확인에만 씁니다. 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않습니다. 설정에서 끌 수 있습니다.</span>
            <span data-en>Used only to check for a new version. It reads the latest version number and sends nothing about you or what it found. You can turn it off.</span></p>
       </div>
+      <div class="card reveal">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8.5 8 9.6 4.6-1.1 8-4.6 8-9.6V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3><span data-ko>서명과 공증</span><span data-en>Signed and notarized</span></h3>
+        <p><span data-ko>Apple 공증을 받아 경고 없이 열립니다. 업데이트도 같은 개발자 서명인지 확인한 뒤에만 설치합니다.</span>
+           <span data-en>Notarized by Apple, so it opens without warnings. Updates install only after the signature is verified as ours.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta-band reveal">
+      <h2><span data-ko>지금 얼마나 쌓여 있는지 확인해보세요</span><span data-en>See what has piled up</span></h2>
+      <p class="lead" style="margin-bottom:26px">
+        <span data-ko>한 번 훑는 데 1~2분, 지우는 것은 당신이 고른 것뿐입니다.</span>
+        <span data-en>A sweep takes a minute or two. Nothing goes anywhere unless you pick it.</span>
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/rayforvideos/attic/releases/latest">
+          <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
+        </a>
+      </div>
+      <p class="meta">
+        <span data-ko>macOS 26 이상 · Apple 공증 완료 · 무료</span>
+        <span data-en>macOS 26 or later · Notarized by Apple · Free</span>
+      </p>
     </div>
   </section>
 </div>
 
 <footer>
   <div class="wrap">
-    <p>
-      <a href="https://github.com/rayforvideos/attic">GitHub</a> ·
-      <a href="https://github.com/rayforvideos/attic/blob/main/LICENSE.md">
-        <span data-ko>라이선스</span><span data-en>License</span></a>
-    </p>
+    <div class="foot-links">
+      <a href="https://github.com/rayforvideos/attic">GitHub</a>
+      <a href="https://github.com/rayforvideos/attic/releases"><span data-ko>변경 내역</span><span data-en>Releases</span></a>
+      <a href="https://github.com/rayforvideos/attic/blob/main/LICENSE.md"><span data-ko>라이선스</span><span data-en>License</span></a>
+    </div>
     <p>© 2026 Sangjun Park</p>
   </div>
 </footer>
 
 <script>
-  const buttons = document.querySelectorAll("[data-set-lang]");
+  // 언어 전환
+  const langButtons = document.querySelectorAll("[data-set-lang]");
   function setLang(lang) {
     document.documentElement.lang = lang;
-    buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
+    langButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
     try { localStorage.setItem("attic-lang", lang); } catch (e) {}
   }
-  buttons.forEach(b => b.addEventListener("click", () => setLang(b.dataset.setLang)));
-  let saved = null;
-  try { saved = localStorage.getItem("attic-lang"); } catch (e) {}
-  // 괄호가 없으면 saved가 "en"이어도 (saved || …)가 참이라 항상 한국어가 된다.
+  langButtons.forEach(b => b.addEventListener("click", () => setLang(b.dataset.setLang)));
+  let savedLang = null;
+  try { savedLang = localStorage.getItem("attic-lang"); } catch (e) {}
   const prefersKorean = (navigator.language || "").toLowerCase().startsWith("ko");
-  setLang(saved || (prefersKorean ? "ko" : "en"));
+  setLang(savedLang || (prefersKorean ? "ko" : "en"));
+
+  // 스크롤에 따라 나타나기
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reveals = document.querySelectorAll(".reveal");
+  const canAnimate = !reduced && "IntersectionObserver" in window;
+  // 숨기는 것은 여기서부터다. 이 줄에 닿지 못하면 페이지는 그냥 보인다.
+  if (canAnimate) document.documentElement.classList.add("anim");
+  if (!canAnimate) {
+    reveals.forEach(el => el.classList.add("in"));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (!entry.isIntersecting) return;
+        // 같은 화면에 들어온 것들을 조금씩 늦춰 순서대로 올라오게 한다
+        entry.target.style.transitionDelay = Math.min(i * 70, 280) + "ms";
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    reveals.forEach(el => io.observe(el));
+  }
+
+  // 숫자 세어 올리기
+  function countUp(el) {
+    const target = Number(el.dataset.count || 0);
+    if (reduced) { el.textContent = String(target); return; }
+    const started = performance.now(), duration = 1100;
+    function step(now) {
+      const t = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(target * eased));
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  const counters = document.querySelectorAll("[data-count]");
+  if ("IntersectionObserver" in window) {
+    const co = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        countUp(entry.target);
+        co.unobserve(entry.target);
+      });
+    }, { threshold: 0.6 });
+    counters.forEach(el => co.observe(el));
+  } else {
+    counters.forEach(el => el.textContent = el.dataset.count);
+  }
+
+  // 스크롤하면 헤더에 경계선
+  const bar = document.getElementById("top-bar");
+  const onScroll = () => bar.classList.toggle("scrolled", window.scrollY > 8);
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
 </script>
 </body>
 </html>
