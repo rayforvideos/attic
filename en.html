@@ -1,18 +1,19 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
+<!-- build-en.py가 index.html에서 만든 파일입니다. 직접 고치지 마세요. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Attic — 쓰지 않는데 자리만 차지하는 파일을 찾아드려요</title>
-<meta name="description" content="맥에 숨어 있는 캐시와 오래된 파일을 찾아주는 메뉴바 앱. 고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.">
+<title>Attic — Find the files you stopped using but never deleted</title>
+<meta name="description" content="A menu bar app that finds hidden caches and stale files on your Mac. Only what you pick goes to the Trash, and nothing is deleted on its own.">
 <link rel="icon" href="favicon.png">
 <meta property="og:title" content="Attic">
-<meta property="og:description" content="쓰지 않는데 자리만 차지하는 파일을 찾아드려요">
-<meta property="og:image" content="https://rayforvideos.github.io/attic/og.png">
+<meta property="og:description" content="Find the files you stopped using but never deleted">
+<meta property="og:image" content="https://rayforvideos.github.io/attic/og-en.png">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1260">
-<meta property="og:image:alt" content="Attic — 쓰지 않는데 자리만 차지하는 파일을 찾아드려요">
-<meta property="og:url" content="https://rayforvideos.github.io/attic/">
+<meta property="og:image:alt" content="Attic — Find the files you stopped using but never deleted">
+<meta property="og:url" content="https://rayforvideos.github.io/attic/en.html">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="alternate" hreflang="ko" href="https://rayforvideos.github.io/attic/">
@@ -562,7 +563,7 @@
   let savedLang = null;
   try { savedLang = localStorage.getItem("attic-lang"); } catch (e) {}
   const prefersKorean = (navigator.language || "").toLowerCase().startsWith("ko");
-  setLang(savedLang || (prefersKorean ? "ko" : "en"));
+  setLang(savedLang || "en");
 
   // 스크롤에 따라 나타나기
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
