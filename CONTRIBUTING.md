@@ -1,6 +1,85 @@
-# 기여하기
+# Contributing
 
-*[English below](#contributing-in-english)*
+*[한국어는 아래에](#기여하기)*
+
+Thanks for looking. Here is what you need to know before sending a PR.
+
+## Getting started
+
+This is a SwiftPM package. You do not need Xcode.
+
+```bash
+git clone https://github.com/rayforvideos/attic.git
+cd attic
+swift build
+swift test
+```
+
+Tests run without launching the app. All logic lives in `AtticCore`; `AtticApp` is only the
+UI. **Please make sure `swift test` passes before opening a PR.**
+
+You do not need to run the actual app. It requires Full Disk Access, which macOS grants to
+signed app bundles, so building a runnable `.app` needs an Apple Development certificate.
+Most changes are verifiable through tests, and the maintainer does the on-device check
+before merging.
+
+## Safety rules
+
+This app touches other people's disks. One bug deletes someone's files. These are not
+negotiable:
+
+**No deletion path bypasses `ReclaimGuard`.** Every candidate is checked twice: once when
+scanning, once immediately before it is moved. Do not add a shortcut because "this one is
+obviously a cache".
+
+**Do not introduce new calls to `FileManager.removeItem`.** The only place this app deletes
+anything is emptying the Trash, which the user confirms explicitly. Everything else is
+`trashItem`.
+
+**Widen by allowlist only.** To find a new kind of item, add a `ReclaimKind` and state
+exactly which paths that kind may touch. "Everything except this folder" is not acceptable.
+
+**When in doubt, do nothing.** If a size could not be measured, the item is left out. If an
+age could not be read, it is treated as just-modified. The safe direction is always inaction.
+
+**A new kind comes with guard tests.** `Tests/AtticCoreTests/GuardAdversarialTests.swift`
+tries to break through the guard. Add an attempt against whatever you introduced.
+
+## About the code
+
+**Comments explain why, not what.** Restating the code is not useful. Say why it is written
+this way and what breaks otherwise. The existing code does this. Korean or English is fine.
+
+**Include the numbers you measured.** If you changed something for performance, put the
+measurement in a comment or the PR description. Every performance decision in this repo has
+one.
+
+**Tests should verify behaviour.** A test that mirrors the implementation prevents nothing.
+If you fixed a bug, check that your test fails against the code before the fix.
+
+## Sending a PR
+
+- One PR, one change. Do not mix refactoring with new features
+- Commit messages say what changed and why. No required format
+- Open an issue first for anything large, so neither of us wastes the effort
+
+## Hard to accept
+
+- **New third-party dependencies.** The app has none today, and that is deliberate
+- **Anything that deletes without the user picking it**
+- **Usage tracking.** The network is used only to check for a new version
+
+## License
+
+This project is [MIT](LICENSE) licensed. Use it, change it, ship it, sell it. Just keep the
+copyright notice.
+
+**By sending a PR you agree that your contribution is provided under the MIT license.**
+You keep the copyright to what you wrote. There is no CLA.
+
+---
+
+# 기여하기
 
 고맙습니다. 이 문서는 PR을 보내기 전에 알아두면 좋은 것들입니다.
 
@@ -79,82 +158,3 @@ swift test
 
 **PR을 보내면 그 코드도 MIT로 제공하는 것에 동의하는 것으로 봅니다.**
 저작권은 기여자 본인에게 그대로 있습니다. CLA는 없습니다.
-
----
-
-# Contributing (in English)
-
-Thanks for looking. Here is what you need to know before sending a PR.
-
-## Getting started
-
-This is a SwiftPM package. You do not need Xcode.
-
-```bash
-git clone https://github.com/rayforvideos/attic.git
-cd attic
-swift build
-swift test
-```
-
-Tests run without launching the app. All logic lives in `AtticCore`; `AtticApp` is only the
-UI. **Please make sure `swift test` passes before opening a PR.**
-
-You do not need to run the actual app. It requires Full Disk Access, which macOS grants to
-signed app bundles, so building a runnable `.app` needs an Apple Development certificate.
-Most changes are verifiable through tests, and the maintainer does the on-device check
-before merging.
-
-## Safety rules
-
-This app touches other people's disks. One bug deletes someone's files. These are not
-negotiable:
-
-**No deletion path bypasses `ReclaimGuard`.** Every candidate is checked twice: once when
-scanning, once immediately before it is moved. Do not add a shortcut because "this one is
-obviously a cache".
-
-**Do not introduce new calls to `FileManager.removeItem`.** The only place this app deletes
-anything is emptying the Trash, which the user confirms explicitly. Everything else is
-`trashItem`.
-
-**Widen by allowlist only.** To find a new kind of item, add a `ReclaimKind` and state
-exactly which paths that kind may touch. "Everything except this folder" is not acceptable.
-
-**When in doubt, do nothing.** If a size could not be measured, the item is left out. If an
-age could not be read, it is treated as just-modified. The safe direction is always inaction.
-
-**A new kind comes with guard tests.** `Tests/AtticCoreTests/GuardAdversarialTests.swift`
-tries to break through the guard. Add an attempt against whatever you introduced.
-
-## About the code
-
-**Comments explain why, not what.** Restating the code is not useful. Say why it is written
-this way and what breaks otherwise. The existing code does this. Korean or English is fine.
-
-**Include the numbers you measured.** If you changed something for performance, put the
-measurement in a comment or the PR description. Every performance decision in this repo has
-one.
-
-**Tests should verify behaviour.** A test that mirrors the implementation prevents nothing.
-If you fixed a bug, check that your test fails against the code before the fix.
-
-## Sending a PR
-
-- One PR, one change. Do not mix refactoring with new features
-- Commit messages say what changed and why. No required format
-- Open an issue first for anything large, so neither of us wastes the effort
-
-## Hard to accept
-
-- **New third-party dependencies.** The app has none today, and that is deliberate
-- **Anything that deletes without the user picking it**
-- **Usage tracking.** The network is used only to check for a new version
-
-## License
-
-This project is [MIT](LICENSE) licensed. Use it, change it, ship it, sell it. Just keep the
-copyright notice.
-
-**By sending a PR you agree that your contribution is provided under the MIT license.**
-You keep the copyright to what you wrote. There is no CLA.
