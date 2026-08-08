@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  /* 링크 미리보기 카드용 1200x630 이미지. 헤드리스 크롬으로 이 파일을 찍는다. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden; position: relative;
+    background: #0e1115; color: #f2f5f8;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; gap: 48px; padding: 0 66px;
+  }
+  /* 오른쪽 위에서 번지는 빛. 단색 배경이 밋밋해 보이는 걸 막는다. */
+  body::before {
+    content: ""; position: absolute; top: -320px; right: -200px;
+    width: 900px; height: 900px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(127,178,229,.20) 0%, rgba(127,178,229,0) 68%);
+  }
+  .left { position: relative; width: 600px; flex: none; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    border: 1px solid #232b35; border-radius: 999px; padding: 7px 15px;
+    font-size: 15px; color: #94a1b2; margin-bottom: 30px;
+  }
+  .badge img { width: 22px; height: 22px; border-radius: 5px; }
+  .badge b { color: #f2f5f8; font-weight: 650; letter-spacing: -.01em; }
+  h1 {
+    font-size: 55px; line-height: 1.24; font-weight: 750; letter-spacing: -.035em;
+  }
+  h1 .grad {
+    background: linear-gradient(96deg, #a9cdf3, #7fb2e5 62%, #6f9fd0);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  p.sub { margin-top: 22px; font-size: 21px; line-height: 1.6; color: #94a1b2; }
+  p.foot {
+    position: absolute; bottom: -96px; left: 0;
+    font-size: 16.5px; color: #6b7684; letter-spacing: .01em;
+  }
+  /* 앱 화면은 정보가 아니라 분위기다. 높이는 사진에 맡긴다 — 틀을 크게 잡으면
+     아래에 빈 검은 칸이 생긴다(처음에 그렇게 만들어 봤다). */
+  .shot {
+    position: relative; width: 418px; flex: none;
+    border-radius: 20px; overflow: hidden;
+    border: 1px solid #232b35; box-shadow: 0 40px 90px rgba(0,0,0,.65);
+    transform: rotate(-2.2deg);
+  }
+  .shot img { width: 100%; display: block; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <span class="badge"><img src="icon.png" alt=""> <b>Attic</b> · macOS</span>
+    <h1><span class="grad">쓰지 않는데<br>자리만 차지하는 파일</span>을<br>찾아드려요</h1>
+    <p class="sub">앱 캐시, 다 쓴 빌드 파일, 받아놓고 잊은 다운로드.<br>고른 것만 휴지통으로 옮깁니다.</p>
+    <p class="foot">rayforvideos.github.io/attic</p>
+  </div>
+  <div class="shot"><img src="screenshot.png" alt=""></div>
+</body>
+</html>
