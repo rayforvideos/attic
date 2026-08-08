@@ -1,57 +1,81 @@
+<div align="center">
+
+<img src="https://rayforvideos.github.io/attic/icon.png" width="120" alt="Attic">
+
 # Attic
 
-쓰지 않는데 자리만 차지하는 파일을 찾아주는 macOS 메뉴바 앱.
+**쓰지 않는데 자리만 차지하는 파일을 찾아드려요.**
 
-앱이 만든 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드, 안 쓰는
-`node_modules` 를 찾습니다. **고른 것만 휴지통으로 옮기고, 앱이 알아서
-지우지 않습니다.**
+맥 곳곳에 숨어 있는 앱 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드를 찾습니다.
+고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.
 
-## 원칙
+[![최신 버전](https://img.shields.io/github/v/release/rayforvideos/attic?label=%EC%B5%9C%EC%8B%A0&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
+[![다운로드](https://img.shields.io/github/downloads/rayforvideos/attic/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases)
+[![macOS 26+](https://img.shields.io/badge/macOS-26%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
+[![PolyForm Shield](https://img.shields.io/badge/license-PolyForm%20Shield-1b2027?style=flat-square)](LICENSE.md)
 
-- **숫자를 지어내지 않는다.** 크기를 재지 못하면 목록에서 빼고 그 사실을
-  보고합니다. 끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지
-  않습니다.
-- **옮기기 직전에 다시 잰다.** 스캔한 값이 오래됐을 수 있으므로, 실제로
-  옮기는 순간 다시 재서 그 숫자를 말합니다.
-- **되돌릴 수 없는 것은 그렇다고 말한다.** 캐시는 "다시 만들어져요", 받은
-  사진은 "지우면 되돌릴 수 없어요" — 아는 만큼만 말합니다.
-- **허용 목록으로만 움직인다.** 지울 수 있는 위치를 미리 정해두고, 그 밖은
-  전부 거부합니다. 실행 직전에 한 번 더 검증합니다.
+**[웹사이트](https://rayforvideos.github.io/attic/)** · **[다운로드](https://github.com/rayforvideos/attic/releases/latest)**
 
-## 빌드
+<img src="https://rayforvideos.github.io/attic/screenshot.png" width="400" alt="Attic 화면">
 
-```sh
-swift test                    # 테스트
-./Scripts/make-app.sh         # build/Attic.app 생성
-./Scripts/make-app.sh --install   # /Applications 에 설치
-```
+</div>
 
-macOS 26+, Swift 6.
+## 무엇을 찾나
 
-## 배포
+| 종류 | 내용 |
+|---|---|
+| **앱이 만든 캐시** | 브라우저 기반 앱이 쌓아둔 웹 캐시, 앱마다 만드는 임시 파일 |
+| **오래된 빌드 산출물** | Xcode 빌드 결과, 기기 지원 파일, 패키지 매니저 캐시, 안 쓰는 `node_modules` |
+| **받아두고 잊은 다운로드** | 설치하고 남은 파일, 오래된 스크린샷, 큰 파일 |
+| **지난 배포용 보관본** | 오래된 `.xcarchive` |
+| **숨어서 도는 것들** | 로그인·부팅할 때 함께 올라오는 프로그램, 지워진 앱이 남긴 자동 실행 등록 |
 
-```sh
-./Scripts/release.sh --dry-run   # 서명·DMG까지 점검
-./Scripts/release.sh             # Developer ID 서명 → 공증 → DMG
-```
+캐시처럼 다시 만들어지는 것과, 지우면 끝인 사용자 파일을 나눠서 보여줍니다.
+되돌릴 수 없는 것은 「캐시 모두 선택」에 들어가지 않고, 어느 폴더에 있는지 함께 표시합니다.
 
-공증에는 Apple Developer Program 멤버십과 Developer ID Application
-인증서가 필요합니다. 자세한 준비물은 `Scripts/release.sh` 상단 주석에
-있습니다.
+## 지키는 것
 
-## 권한
+디스크를 맡기는 앱이라, 무엇을 하지 않는지가 먼저입니다.
 
-캐시를 찾으려면 다른 앱의 폴더를 봐야 하고, macOS는 그것을 앱마다 따로
-묻습니다. **전체 디스크 접근을 한 번 허용하면** 그 프롬프트가 모두
-사라집니다. 앱 안에서 안내와 바로가기를 제공합니다.
+**고른 것만 휴지통으로 옮깁니다.** 앱이 알아서 지우는 일은 없습니다.
 
-네트워크는 **새 버전 확인에만** 씁니다: 하루 한 번 GitHub에서 최신 버전 번호를
-읽고, 무엇을 찾았는지나 누구인지는 보내지 않습니다. 설정에서 끌 수 있습니다.
+**숫자를 지어내지 않습니다.** 크기를 재지 못한 항목은 목록에서 빼고 그 사실을 알립니다.
+끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지 않습니다.
+
+**옮기기 직전에 다시 잽니다.** 스캔한 값은 오래됐을 수 있습니다. 실제로 비는 용량은 그 순간에
+다시 잰 숫자입니다.
+
+**되돌릴 수 없는 것은 그렇다고 말합니다.** 캐시는 다시 만들어지지만 받은 사진은 아닙니다.
+아는 만큼만 말합니다.
+
+**허용 목록으로만 움직입니다.** 손댈 수 있는 위치를 미리 정해두고, 그 밖은 전부 거부합니다.
+실행 직전에 한 번 더 검증합니다.
+
+## 설치
+
+**[최신 버전 받기](https://github.com/rayforvideos/attic/releases/latest)**
+
+DMG를 열고 Attic을 응용 프로그램 폴더로 끌어다 놓으세요. 실행하면 메뉴바에 디스크 아이콘이
+생깁니다. Apple 공증을 받았으므로 경고 없이 열립니다.
+
+macOS 26 이상이 필요합니다.
+
+## 권한과 통신
+
+**전체 디스크 접근.** 캐시를 찾으려면 다른 앱의 폴더를 봐야 하는데, macOS는 그것을 앱마다 따로
+묻습니다. 앱 안의 안내에서 한 번 허용하면 그 뒤로는 묻지 않습니다.
+
+**네트워크는 새 버전 확인에만.** 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지
+않습니다. 설정에서 끌 수 있습니다.
+
+## 업데이트
+
+앱 안에서 받아 교체합니다. 교체 전에 내려받은 앱이 같은 개발자 서명인지와 공증을 통과했는지
+확인하고, 하나라도 아니면 설치하지 않습니다. 옛 버전은 지우지 않고 휴지통으로 보냅니다.
 
 ## 라이선스
 
-[PolyForm Shield 1.0.0](LICENSE.md) — 개인이든 회사든 자유롭게 쓰고, 고치고,
-배포할 수 있습니다. **다만 이 소프트웨어와 경쟁하는 제품을 만드는 데는 쓸 수
-없습니다.**
+[PolyForm Shield 1.0.0](LICENSE.md). 개인이든 회사든 자유롭게 쓰고, 고치고, 배포할 수 있습니다.
+다만 이 소프트웨어와 경쟁하는 제품을 만드는 데는 쓸 수 없습니다.
 
 Copyright (c) 2026 Sangjun Park
