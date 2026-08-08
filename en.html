@@ -41,8 +41,15 @@
     margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
           "Segoe UI", system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    /* 히어로 뒤 장식용 빛(900px)이 좁은 화면에서 오른쪽으로 삐져나가 가로
+       스크롤을 만들었다. 줌하면 뷰포트가 좁아져 그대로 드러난다.
+       hidden은 스크롤 컨테이너를 만들어 position:sticky 헤더와 부딪히므로
+       clip을 쓰고, 지원하지 않는 브라우저를 위해 hidden을 먼저 둔다. */
+    overflow-x: hidden;
+    overflow-x: clip;
   }
+  html { overflow-x: hidden; overflow-x: clip; }
   a { color: var(--accent); text-decoration: none; transition: color .18s ease; }
   a:hover { color: var(--accent-strong); }
   .wrap { max-width: 1020px; margin: 0 auto; padding: 0 28px; }
@@ -125,6 +132,14 @@
   .btn-ghost { border: 1px solid var(--line); color: var(--text); }
   .btn-ghost:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
   .meta { margin-top: 15px; font-size: 13px; color: var(--dimmer); }
+  /* 맥이 아닌 기기에서는 받아봐야 쓸 수 없다. 버튼 대신 안내를 보여준다. */
+  .not-mac { display: none; }
+  html.no-download .not-mac { display: block; }
+  html.no-download [data-download] { display: none; }
+  .not-mac {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 11px;
+    padding: 13px 20px; font-size: 14.5px; color: var(--dim); margin: 0 auto; max-width: 380px;
+  }
 
   .shot-frame { position: relative; margin: 58px auto 0; width: min(420px, 100%); }
   .shot-frame::after {
@@ -291,6 +306,10 @@
         <span data-ko>소스 보기</span><span data-en>View source</span>
       </a>
     </div>
+    <p class="not-mac reveal">
+      <span data-ko>맥용 앱이라 이 기기에서는 받을 수 없어요. 맥에서 이 페이지를 열어주세요.</span>
+      <span data-en>This is a Mac app, so there is nothing to download here. Open this page on a Mac.</span>
+    </p>
     <p class="meta reveal">
       <span data-ko>macOS 15 이상 · Apple Silicon과 Intel 모두 지원 · 받아서 열면 바로 실행됩니다</span>
       <span data-en>macOS 15 or later · Apple Silicon and Intel · Opens without a warning</span>
@@ -540,6 +559,10 @@
           <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
         </a>
       </div>
+      <p class="not-mac">
+        <span data-ko>맥에서 이 페이지를 열면 바로 받을 수 있어요.</span>
+        <span data-en>Open this page on a Mac to download it.</span>
+      </p>
       <p class="meta">
         <span data-ko>macOS 15 이상 · Apple Silicon과 Intel 모두 지원 · 무료</span>
         <span data-en>macOS 15 or later · Apple Silicon and Intel · Free</span>
@@ -560,6 +583,14 @@
 </footer>
 
 <script>
+  // 맥이 아닌 기기인가. 아이패드는 UA에 Macintosh라고 적어 보내므로
+  // 터치 지점 수로 한 번 더 가른다(데스크톱 맥은 0이다).
+  const ua = navigator.userAgent;
+  const iPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  if (/iPhone|iPad|iPod|Android|Windows|Linux/.test(ua) && !/Macintosh/.test(ua) || iPadOS) {
+    document.documentElement.classList.add("no-download");
+  }
+
   // 언어 전환
   const langButtons = document.querySelectorAll("[data-set-lang]");
   // persist는 사용자가 직접 버튼을 눌렀을 때만 true다. 자동으로 고른 언어까지
