@@ -8,7 +8,10 @@
 <link rel="icon" href="favicon.png">
 <meta property="og:title" content="Attic">
 <meta property="og:description" content="쓰지 않는데 자리만 차지하는 파일을 찾아드려요">
-<meta property="og:image" content="screenshot.png">
+<meta property="og:image" content="https://rayforvideos.github.io/attic/screenshot.png">
+<meta property="og:url" content="https://rayforvideos.github.io/attic/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0e1115">
 <style>
   :root {
@@ -112,13 +115,22 @@
     border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6);
   }
 
-  /* ── 지표 ─────────────────────────────────────────── */
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line-soft);
-           border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; margin-top: 76px; }
-  .stat { background: var(--bg-soft); padding: 24px 20px; text-align: center; }
-  .stat b { display: block; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
-  .stat span { font-size: 13px; color: var(--dimmer); }
-  @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
+  .meta .ver { display: block; margin-top: 6px; color: var(--dimmer); }
+  .meta .ver b { color: var(--dim); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ── 쓰는 흐름 ─────────────────────────────────────── */
+  .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line-soft);
+          border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; margin-top: 76px; }
+  .step { background: var(--bg-soft); padding: 26px 24px 28px; }
+  .step .n {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 8px; margin-bottom: 14px;
+    background: var(--accent-dim); color: var(--accent);
+    font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .step b { display: block; font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
+  .step p { margin: 0; font-size: 13.5px; line-height: 1.7; color: var(--dimmer); }
+  @media (max-width: 720px) { .flow { grid-template-columns: 1fr; } }
 
   /* ── 섹션 ─────────────────────────────────────────── */
   section { padding: 96px 0; }
@@ -259,24 +271,33 @@
     <p class="meta reveal">
       <span data-ko>macOS 26 이상 · Apple Silicon과 Intel 모두 지원 · Apple 공증 완료</span>
       <span data-en>macOS 26 or later · Apple Silicon and Intel · Notarized by Apple</span>
+      <span class="ver" hidden>
+        <span data-ko>최신 버전</span><span data-en>Latest</span> <b data-version></b>
+      </span>
     </p>
 
     <div class="shot-frame reveal">
       <img src="screenshot.png" alt="Attic">
     </div>
 
-    <div class="stats reveal">
-      <div class="stat">
-        <b data-count="111">0</b>
-        <span data-ko>GB · 개발자 맥 한 대에서 나온 양</span><span data-en>GB found on one developer Mac</span>
+    <div class="flow reveal">
+      <div class="step">
+        <span class="n">1</span>
+        <b><span data-ko>훑습니다</span><span data-en>It sweeps</span></b>
+        <p><span data-ko>메뉴바 아이콘을 누르면 시작합니다. 1~2분이면 어디에 무엇이 쌓였는지 다 나옵니다.</span>
+           <span data-en>Click the menu bar icon. A minute or two later you know what piled up, and where.</span></p>
       </div>
-      <div class="stat">
-        <b>0</b>
-        <span data-ko>알아서 지우는 파일</span><span data-en>files deleted on its own</span>
+      <div class="step">
+        <span class="n">2</span>
+        <b><span data-ko>고릅니다</span><span data-en>You pick</span></b>
+        <p><span data-ko>다시 생기는 캐시는 한 번에 고르고, 지우면 끝인 파일은 하나씩 보고 정합니다.</span>
+           <span data-en>Caches that rebuild themselves go in one click. Files that are gone for good, you review one by one.</span></p>
       </div>
-      <div class="stat">
-        <b data-count="176">0</b>
-        <span data-ko>개 테스트가 규칙을 지킵니다</span><span data-en>tests guarding the rules</span>
+      <div class="step">
+        <span class="n">3</span>
+        <b><span data-ko>휴지통으로 갑니다</span><span data-en>It moves to the Trash</span></b>
+        <p><span data-ko>고른 것만 옮깁니다. 휴지통을 비우기 전까지는 언제든 되돌릴 수 있습니다.</span>
+           <span data-en>Only what you picked. Until you empty the Trash, every bit of it can come back.</span></p>
       </div>
     </div>
   </div>
@@ -350,7 +371,7 @@
             <span data-en>Empty the Trash without leaving the window</span></li>
         </ul>
       </div>
-      <div class="split-shot"><img src="shot-space.png" alt=""></div>
+      <div class="split-shot"><img src="shot-space.png" alt="Attic 공간 탭 — 비울 수 있는 항목 목록"></div>
     </div>
 
     <div class="split flip reveal">
@@ -375,7 +396,7 @@
             <span data-en>Dev processes still alive after you closed the window</span></li>
         </ul>
       </div>
-      <div class="split-shot"><img src="shot-cleanup.png" alt=""></div>
+      <div class="split-shot"><img src="shot-cleanup.png" alt="Attic 숨은 프로세스 탭 — 로그인 시 실행되는 항목"></div>
     </div>
 
     <div class="split reveal">
@@ -400,7 +421,7 @@
             <span data-en>Turn off personal files entirely if you prefer</span></li>
         </ul>
       </div>
-      <div class="split-shot tall"><img src="shot-settings.png" alt=""></div>
+      <div class="split-shot tall"><img src="shot-settings.png" alt="Attic 설정 창 — 기준과 보호 폴더"></div>
     </div>
   </section>
 
@@ -550,33 +571,6 @@
     reveals.forEach(el => io.observe(el));
   }
 
-  // 숫자 세어 올리기
-  function countUp(el) {
-    const target = Number(el.dataset.count || 0);
-    if (reduced) { el.textContent = String(target); return; }
-    const started = performance.now(), duration = 1100;
-    function step(now) {
-      const t = Math.min(1, (now - started) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = String(Math.round(target * eased));
-      if (t < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-  const counters = document.querySelectorAll("[data-count]");
-  if ("IntersectionObserver" in window) {
-    const co = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        countUp(entry.target);
-        co.unobserve(entry.target);
-      });
-    }, { threshold: 0.6 });
-    counters.forEach(el => co.observe(el));
-  } else {
-    counters.forEach(el => el.textContent = el.dataset.count);
-  }
-
   // 다운로드 버튼이 DMG를 바로 받게 한다.
   //
   // 파일 이름에 버전이 들어 있어서 고정 주소로는 가리킬 수 없다. 최신 릴리스를
@@ -592,8 +586,14 @@
       document.querySelectorAll("[data-download]").forEach(a => {
         a.href = dmg.browser_download_url;
       });
+      // 버전을 못 읽어오면 자리 자체를 만들지 않는다. 빈 칸이 보이는 것보다 낫다.
       const version = (release.tag_name || "").replace(/^v/, "");
-      document.querySelectorAll("[data-version]").forEach(el => { el.textContent = version; });
+      if (!version) return;
+      document.querySelectorAll("[data-version]").forEach(el => {
+        el.textContent = version;
+        const holder = el.closest("[hidden]");
+        if (holder) holder.removeAttribute("hidden");
+      });
     })
     .catch(() => {});
 
