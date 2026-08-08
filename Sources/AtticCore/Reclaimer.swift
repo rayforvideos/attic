@@ -62,15 +62,18 @@ public struct Reclaimer: Sendable {
         for item in items {
             let fm = FileManager.default
 
-            var isDirectory: ObjCBool = false
-            guard fm.fileExists(atPath: item.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue else {
+            // 폴더만 받던 시절의 검사가 남아 있었다. 그 뒤로 스크린샷·다운로드
+            // 파일·큰 파일처럼 **파일 하나**인 항목이 생겼는데, 그것들이 전부
+            // "경로가 이미 없어요"로 처리되어 목록에서 조용히 사라졌다.
+            // attributesOfItem은 심볼릭 링크를 따라가지 않으므로, 끊어진 링크도
+            // "없다"가 아니라 링크로 보고 아래 가드가 거부한다.
+            guard let attributes = try? fm.attributesOfItem(atPath: item.path) else {
                 failed.append((item.path, L("경로가 이미 없어요")))
                 alreadyGone.append(item.path)
                 continue
             }
 
-            let isSymlink = isSymlinkPath(item.path)
+            let isSymlink = (attributes[.type] as? FileAttributeType) == .typeSymbolicLink
             let resolvedPath = URL(fileURLWithPath: item.path).resolvingSymlinksInPath().path
 
             let lockfilePresent: Bool
@@ -121,15 +124,6 @@ public struct Reclaimer: Sendable {
         return ReclaimResult(movedBytes: movedBytes, movedCount: movedCount,
                               refused: refused, failed: failed, trashedURLs: trashedURLs,
                               remeasured: allRemeasured, alreadyGone: alreadyGone)
-    }
-
-    private func isSymlinkPath(_ path: String) -> Bool {
-        // Fail closed: if we can't stat the path at all, treat it as a
-        // symlink (refuse) rather than assuming it's a plain file/directory.
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path) else {
-            return true
-        }
-        return (attrs[.type] as? FileAttributeType) == .typeSymbolicLink
     }
 
     private func hasLockfile(inDirectory dir: String) -> Bool {

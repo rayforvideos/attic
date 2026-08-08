@@ -65,6 +65,38 @@ struct ScanExecuteAgreementTests {
         }
     }
 
+    /// 파일 하나짜리 항목(스크린샷·다운로드 파일·큰 파일)이 실제로 옮겨지는지.
+    ///
+    /// 예전에는 Reclaimer가 폴더만 받아서, 이런 항목이 전부 "경로가 이미 없어요"로
+    /// 처리되고 목록에서 조용히 사라졌다. 한 종류라도 빠뜨리면 안 되니 각각 옮겨본다.
+    @Test func movesSingleFileItemsNotJustFolders() async throws {
+        let home = try makeHome()
+        defer { try? FileManager.default.removeItem(at: home) }
+
+        let report = await ReclaimScanner(home: home.path, projectRoots: [],
+                                         staleThresholdDays: 90,
+                                         largeFileThreshold: 100 << 20).scan()
+        var trashed: [String] = []
+        defer { for path in trashed { try? FileManager.default.removeItem(atPath: path) } }
+
+        for kind in [ReclaimKind.staleInstaller, .oldScreenshot, .largeFile] {
+            let files = report.items.filter {
+                $0.kind == kind
+                    && !((try? FileManager.default.attributesOfItem(atPath: $0.path))?[.type]
+                        as? FileAttributeType == .typeDirectory)
+            }
+            let target = try #require(files.first, "\(kind): 파일 항목이 나와야 한다")
+            let result = await Reclaimer().moveToTrash([target],
+                                                       guard: ReclaimGuard(home: home.path),
+                                                       staleThresholdDays: 90)
+            trashed += result.trashedURLs
+            #expect(result.movedCount == 1,
+                    "\(kind) \(target.displayName): 거부 \(result.refused.map(\.reason)) / 실패 \(result.failed.map(\.message))")
+            #expect(result.alreadyGone.isEmpty, "\(kind)")
+            #expect(!FileManager.default.fileExists(atPath: target.path), "\(kind)")
+        }
+    }
+
     /// 실제로 옮겨본다 — 가드를 통과하는 것을 넘어 파일이 정말 휴지통으로 가는지.
     @Test func moveToTrashActuallyMovesUserFiles() async throws {
         let home = try makeHome()
