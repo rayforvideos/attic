@@ -17,6 +17,11 @@ public enum PathDisplay {
         return shorten(abbreviate(parent, home: home), limit: limit)
     }
 
+    /// 홈만 `~`로 접는다. 길이는 건드리지 않는다 — 접는 폭이 자리마다 다르다.
+    public static func abbreviateHome(_ path: String, home: String = NSHomeDirectory()) -> String {
+        abbreviate(path, home: home)
+    }
+
     static func abbreviate(_ path: String, home: String) -> String {
         guard !home.isEmpty else { return path }
         if path == home { return "~" }

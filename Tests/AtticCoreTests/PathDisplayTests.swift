@@ -37,3 +37,26 @@ struct PathDisplayTests {
         #expect(PathDisplay.folder(of: "\(home)/a.png", home: home) == "~")
     }
 }
+
+@Suite("경로에서 홈 접기")
+struct AbbreviateHomeTests {
+    /// 계정 이름이 화면에 그대로 나오면 스크린샷이나 화면 공유에 딸려 나간다.
+    @Test func foldsHomeToTilde() {
+        let home = "/Users/tester"
+        #expect(PathDisplay.abbreviateHome("\(home)/Library/LaunchAgents/x.plist", home: home)
+                == "~/Library/LaunchAgents/x.plist")
+        #expect(PathDisplay.abbreviateHome(home, home: home) == "~")
+    }
+
+    /// 홈 밖의 경로(시스템 항목)는 그대로 둔다. 거기엔 접을 것도, 가릴 것도 없다.
+    @Test func leavesSystemPathsAlone() {
+        #expect(PathDisplay.abbreviateHome("/Library/LaunchDaemons/x.plist", home: "/Users/tester")
+                == "/Library/LaunchDaemons/x.plist")
+    }
+
+    /// 다른 사용자의 홈을 내 홈으로 착각해 접으면 안 된다.
+    @Test func doesNotFoldSimilarPrefix() {
+        #expect(PathDisplay.abbreviateHome("/Users/tester2/x", home: "/Users/tester")
+                == "/Users/tester2/x")
+    }
+}

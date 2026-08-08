@@ -81,9 +81,13 @@ struct CleanupPane: View {
         }
     }
 
+    /// 홈은 `~`로 접는다. 화면이 좁아 어차피 가운데가 접히는데, 거기에 사용자
+    /// 계정 이름까지 넣어 자리를 쓸 이유가 없다. 화면을 남에게 보여줄 때
+    /// (스크린샷·화면 공유) 계정 이름이 딸려 나가지도 않는다.
     private func leftoverPath(_ item: StartupItem) -> String {
-        if case .programMissing(let path) = item.leftover { return path }
-        return item.plistPath
+        let path: String
+        if case .programMissing(let raw) = item.leftover { path = raw } else { path = item.plistPath }
+        return PathDisplay.abbreviateHome(path)
     }
 
     /// 관리자 권한이 있어야 바꿀 수 있는 것들. 끄지는 못해도 **무엇이 올라오는지**
