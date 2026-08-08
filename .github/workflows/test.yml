@@ -1,0 +1,31 @@
+name: 테스트
+
+# PR마다 테스트를 돌린다. 남의 코드를 받아서 직접 돌려보지 않아도 되도록.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  # 같은 PR에 새 커밋이 오면 이전 실행은 접는다.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # 이 앱은 macOS 26 SDK로 빌드된다(Package.swift의 platforms).
+    # 러너 이미지가 그보다 낮으면 여기서 바로 실패하므로 원인을 찾기 쉽다.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 도구 버전
+        run: |
+          sw_vers
+          swift --version
+
+      - name: 빌드
+        run: swift build --build-tests
+
+      - name: 테스트
+        run: swift test --skip-build
