@@ -144,6 +144,26 @@
   .card h3 { margin: 0 0 7px; font-size: 15.5px; font-weight: 640; }
   .card p { margin: 0; color: var(--dim); font-size: 14.2px; line-height: 1.68; }
 
+  /* 화면 소개: 글과 스크린샷을 번갈아 놓는다 */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .split + .split { margin-top: 88px; }
+  .split.flip .split-text { order: 2; }
+  @media (max-width: 820px) {
+    .split { grid-template-columns: 1fr; gap: 28px; }
+    .split.flip .split-text { order: 0; }
+  }
+  .split h3 { font-size: clamp(20px, 2.4vw, 25px); margin: 12px 0 12px; letter-spacing: -.02em; }
+  .split p { color: var(--dim); margin: 0 0 16px; font-size: 15.5px; }
+  .split ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+  .split li { display: flex; gap: 9px; align-items: flex-start; font-size: 14.5px; color: var(--dim); }
+  .split li svg { flex: none; width: 15px; height: 15px; margin-top: 5px; stroke: var(--accent); fill: none; stroke-width: 2.4; }
+  .split-shot { position: relative; }
+  .split-shot img {
+    width: 100%; height: auto; display: block; border-radius: 16px;
+    border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .split-shot.tall img { max-width: 340px; margin: 0 auto; }
+
   .rules { display: grid; gap: 14px; }
   .rule {
     display: flex; gap: 16px; align-items: flex-start;
@@ -214,15 +234,16 @@
   <div class="hero">
     <span class="eyebrow reveal">
       <b>macOS</b>
-      <span data-ko>메뉴바에서 조용히 돕니다</span><span data-en>Lives quietly in your menu bar</span>
+      <span data-ko>메뉴바에 조용히 있습니다</span><span data-en>Lives quietly in your menu bar</span>
     </span>
     <h1 class="reveal">
       <span data-ko><span class="grad">쓰지 않는데<br>자리만 차지하는 파일</span>을 찾아드려요</span>
       <span data-en><span class="grad">Find the files you stopped using</span><br>but never deleted</span>
     </h1>
     <p class="sub reveal">
-      <span data-ko>맥 곳곳에 숨어 있는 앱 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드를 찾습니다.
-        고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.</span>
+      <span data-ko>앱이 만든 캐시, 다 쓴 빌드 파일, 받아놓고 잊은 다운로드.
+        맥 곳곳에 흩어져 있는 것들을 한 번에 찾아냅니다.
+        고른 것만 휴지통으로 옮기고, 알아서 지우는 일은 없습니다.</span>
       <span data-en>App caches, stale build output, and downloads you forgot are scattered all over your Mac.
         Attic finds them. Only what you pick goes to the Trash, and nothing is deleted on its own.</span>
     </p>
@@ -247,15 +268,15 @@
     <div class="stats reveal">
       <div class="stat">
         <b data-count="111">0</b>
-        <span data-ko>GB · 개발자 맥에서 찾은 양</span><span data-en>GB found on one developer Mac</span>
+        <span data-ko>GB · 개발자 맥 한 대에서 나온 양</span><span data-en>GB found on one developer Mac</span>
       </div>
       <div class="stat">
         <b>0</b>
-        <span data-ko>자동으로 지우는 파일</span><span data-en>files deleted on its own</span>
+        <span data-ko>알아서 지우는 파일</span><span data-en>files deleted on its own</span>
       </div>
       <div class="stat">
         <b data-count="176">0</b>
-        <span data-ko>개 테스트가 지키는 규칙</span><span data-en>tests guarding the rules</span>
+        <span data-ko>개 테스트가 규칙을 지킵니다</span><span data-en>tests guarding the rules</span>
       </div>
     </div>
   </div>
@@ -263,9 +284,9 @@
   <section id="what">
     <div class="head reveal">
       <div class="kicker"><span data-ko>찾는 것</span><span data-en>What it finds</span></div>
-      <h2><span data-ko>어디에 쌓였는지 대신 찾아봅니다</span><span data-en>It knows where things pile up</span></h2>
+      <h2><span data-ko>어디에 쌓이는지 알고 찾아갑니다</span><span data-en>It knows where things pile up</span></h2>
       <p class="lead">
-        <span data-ko>지워도 다시 만들어지는 것과, 지우면 끝인 것을 나눠서 보여줍니다.</span>
+        <span data-ko>다시 생기는 것과 지우면 끝인 것을 갈라서 보여줍니다.</span>
         <span data-en>What rebuilds itself is kept separate from what is gone for good.</span>
       </p>
     </div>
@@ -273,27 +294,113 @@
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div>
         <h3><span data-ko>앱이 만든 캐시</span><span data-en>App caches</span></h3>
-        <p><span data-ko>브라우저 기반 앱이 쌓아둔 웹 캐시와 앱마다 만드는 임시 파일. 지워도 다시 만들어집니다.</span>
+        <p><span data-ko>슬랙, 노션 같은 앱이 쌓아둔 웹 캐시와 임시 파일. 지워도 다시 생깁니다.</span>
            <span data-en>Web caches from browser-based apps and per-app temporary files. They come back on their own.</span></p>
       </div>
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="m15 5 4 4"/><path d="M3 21v-4L16 4a2.8 2.8 0 0 1 4 4L7 21z"/></svg></div>
         <h3><span data-ko>오래된 빌드 산출물</span><span data-en>Stale build output</span></h3>
-        <p><span data-ko>Xcode 빌드 결과, 기기 지원 파일, 패키지 매니저 캐시, 안 쓰는 node_modules.</span>
+        <p><span data-ko>Xcode 빌드 결과, 기기 지원 파일, 패키지 매니저 캐시, 손 뗀 프로젝트의 node_modules.</span>
            <span data-en>Xcode derived data, device support files, package manager caches, unused node_modules.</span></p>
       </div>
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg></div>
         <h3><span data-ko>받아두고 잊은 다운로드</span><span data-en>Forgotten downloads</span></h3>
-        <p><span data-ko>설치하고 남은 파일, 오래된 스크린샷, 큰 파일. 되돌릴 수 없어서 자동으로 선택되지 않습니다.</span>
+        <p><span data-ko>설치하고 남은 dmg, 몇 달 전 스크린샷, 덩치 큰 파일. 지우면 끝이라 자동으로 체크되지 않습니다.</span>
            <span data-en>Installers you already used, old screenshots, large files. Never auto-selected, because deleting them is permanent.</span></p>
       </div>
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6 2 2 0 1 1 14 4.6a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.6 1z"/></svg></div>
         <h3><span data-ko>숨어서 도는 것들</span><span data-en>Things running quietly</span></h3>
-        <p><span data-ko>로그인·부팅할 때 함께 올라오는 프로그램과, 지워진 앱이 남긴 자동 실행 등록.</span>
+        <p><span data-ko>켤 때마다 같이 뜨는 프로그램, 그리고 앱은 지웠는데 등록만 남은 것들.</span>
            <span data-en>Programs that launch with your Mac, and startup entries left behind by software you removed.</span></p>
       </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="head center reveal">
+      <div class="kicker"><span data-ko>화면</span><span data-en>A look inside</span></div>
+      <h2><span data-ko>메뉴바에서 두 가지를 봅니다</span><span data-en>Two tabs, that is all</span></h2>
+      <p class="lead">
+        <span data-ko>쌓인 파일과, 몰래 도는 프로그램.</span>
+        <span data-en>What piled up, and what runs behind your back.</span>
+      </p>
+    </div>
+
+    <div class="split reveal">
+      <div class="split-text">
+        <div class="kicker"><span data-ko>공간</span><span data-en>Space</span></div>
+        <h3><span data-ko>비울 수 있는 만큼이 먼저 보입니다</span><span data-en>The number you can act on, first</span></h3>
+        <p>
+          <span data-ko>디스크가 얼마나 찼는지, 그중 얼마를 비울 수 있는지 위에 놓습니다.
+            항목마다 왜 지워도 되는지, 며칠째 그대로인지 적어둡니다.</span>
+          <span data-en>How full the disk is, and how much of that you can reclaim. Every row says
+            why it is safe to remove and how long it has sat there.</span>
+        </p>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>캐시는 한 번에 고르고, 사용자 파일은 하나씩 확인</span>
+            <span data-en>Select all caches at once, review personal files one by one</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>훑는 동안에도 찾은 것부터 바로 올라옵니다</span>
+            <span data-en>Results appear as they are found, not at the end</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>휴지통을 비우는 것까지 여기서</span>
+            <span data-en>Empty the Trash without leaving the window</span></li>
+        </ul>
+      </div>
+      <div class="split-shot"><img src="shot-space.png" alt=""></div>
+    </div>
+
+    <div class="split flip reveal">
+      <div class="split-text">
+        <div class="kicker"><span data-ko>숨은 프로세스</span><span data-en>Hidden</span></div>
+        <h3><span data-ko>켤 때마다 같이 뜨는 것들</span><span data-en>What starts up with your Mac</span></h3>
+        <p>
+          <span data-ko>로그인할 때 올라오는 프로그램을 모아 보여주고, 필요 없으면 그 자리에서 끕니다.
+            앱은 지웠는데 등록만 남은 찌꺼기도 찾아냅니다.</span>
+          <span data-en>Everything that launches at login, in one list, with an off switch.
+            It also finds entries left behind by apps you already deleted.</span>
+        </p>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>끄기는 제거가 아니라 등록 해제, 언제든 되돌립니다</span>
+            <span data-en>Turning one off unregisters it, never deletes it</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>부팅할 때 올라오는 시스템 항목도 함께 보여줍니다</span>
+            <span data-en>System-wide startup items are listed too</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>창은 닫혔는데 살아 있는 개발 프로세스도 찾습니다</span>
+            <span data-en>Dev processes still alive after you closed the window</span></li>
+        </ul>
+      </div>
+      <div class="split-shot"><img src="shot-cleanup.png" alt=""></div>
+    </div>
+
+    <div class="split reveal">
+      <div class="split-text">
+        <div class="kicker"><span data-ko>설정</span><span data-en>Settings</span></div>
+        <h3><span data-ko>기준은 직접 정합니다</span><span data-en>You set the thresholds</span></h3>
+        <p>
+          <span data-ko>며칠부터 오래된 것으로 볼지, 몇 MB부터 큰 파일로 볼지 고를 수 있습니다.
+            손대면 안 되는 폴더는 적어두면 찾기에서 아예 빠집니다.</span>
+          <span data-en>Decide what counts as old, what counts as large, and which folders to
+            leave alone. Anything you list is skipped entirely.</span>
+        </p>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>한국어와 영어, 바꾸면 바로 적용됩니다</span>
+            <span data-en>Korean and English, switching applies immediately</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>여유 공간이 부족해지면 알려줍니다</span>
+            <span data-en>A nudge when free space runs low</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>
+            <span data-ko>내 파일은 아예 안 찾도록 끌 수 있습니다</span>
+            <span data-en>Turn off personal files entirely if you prefer</span></li>
+        </ul>
+      </div>
+      <div class="split-shot tall"><img src="shot-settings.png" alt=""></div>
     </div>
   </section>
 
@@ -302,7 +409,7 @@
       <div class="kicker"><span data-ko>원칙</span><span data-en>Principles</span></div>
       <h2><span data-ko>디스크를 맡기는 앱이니까</span><span data-en>You are handing it your disk</span></h2>
       <p class="lead">
-        <span data-ko>무엇을 할 수 있는지보다, 무엇을 하지 않는지가 먼저입니다.</span>
+        <span data-ko>뭘 할 수 있는지보다 뭘 안 하는지가 먼저입니다.</span>
         <span data-en>What it will not do matters more than what it can.</span>
       </p>
     </div>
@@ -311,7 +418,7 @@
         <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
         <div>
           <b><span data-ko>고른 것만 휴지통으로 옮깁니다</span><span data-en>Only what you pick, and only to the Trash</span></b>
-          <p><span data-ko>앱이 알아서 지우는 일은 없습니다. 되돌릴 수 있어야 하니까요.</span>
+          <p><span data-ko>알아서 지우는 일은 없습니다. 마음이 바뀌면 되돌릴 수 있어야 하니까요.</span>
              <span data-en>Nothing is deleted on its own. You need to be able to undo it.</span></p>
         </div>
       </div>
@@ -319,7 +426,7 @@
         <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
         <div>
           <b><span data-ko>숫자를 지어내지 않습니다</span><span data-en>It never invents a number</span></b>
-          <p><span data-ko>크기를 재지 못한 항목은 목록에서 빼고 그 사실을 알립니다. 끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지 않습니다.</span>
+          <p><span data-ko>크기를 못 잰 항목은 목록에서 빼고 그렇다고 알려줍니다. 못 들어간 폴더가 있으면 "비울 게 없어요"라고 하지 않습니다.</span>
              <span data-en>If it could not measure something, it leaves it out and says so. If a folder could not be fully read, it will not claim there is nothing to clean.</span></p>
         </div>
       </div>
@@ -327,7 +434,7 @@
         <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
         <div>
           <b><span data-ko>옮기기 직전에 다시 잽니다</span><span data-en>It measures again right before moving</span></b>
-          <p><span data-ko>스캔한 값은 오래됐을 수 있습니다. 실제로 비는 용량은 그 순간에 다시 잰 숫자입니다.</span>
+          <p><span data-ko>훑어본 지 시간이 지났을 수 있으니까요. 화면에 뜨는 확보 용량은 옮기는 그 순간 다시 잰 값입니다.</span>
              <span data-en>A scan result can be stale. The freed space you see is measured at the moment it happens.</span></p>
         </div>
       </div>
@@ -335,7 +442,7 @@
         <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
         <div>
           <b><span data-ko>되돌릴 수 없는 것은 그렇다고 말합니다</span><span data-en>It tells you when something cannot come back</span></b>
-          <p><span data-ko>캐시는 다시 만들어지지만 받은 사진은 그렇지 않습니다. 아는 만큼만 말합니다.</span>
+          <p><span data-ko>캐시는 다시 생기지만 받아둔 사진은 아닙니다. 아는 만큼만 말합니다.</span>
              <span data-en>A cache rebuilds itself. A photo someone sent you does not. It only claims what it knows.</span></p>
         </div>
       </div>
@@ -343,7 +450,7 @@
         <span class="mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
         <div>
           <b><span data-ko>허용 목록으로만 움직입니다</span><span data-en>It moves only inside an allowlist</span></b>
-          <p><span data-ko>손댈 수 있는 위치를 미리 정해두고, 그 밖은 전부 거부합니다. 실행 직전에 한 번 더 검증합니다.</span>
+          <p><span data-ko>손댈 수 있는 위치를 미리 정해두고 나머지는 전부 거절합니다. 옮기기 직전에 한 번 더 확인합니다.</span>
              <span data-en>The places it may touch are fixed in advance, everything else is refused, and it verifies once more right before acting.</span></p>
         </div>
       </div>
@@ -353,25 +460,25 @@
   <section id="privacy">
     <div class="head reveal">
       <div class="kicker"><span data-ko>권한과 통신</span><span data-en>Permissions and network</span></div>
-      <h2><span data-ko>무엇을 요구하고, 무엇을 보내지 않는지</span><span data-en>What it asks for, and what it never sends</span></h2>
+      <h2><span data-ko>무엇을 요구하고, 무엇을 안 보내는지</span><span data-en>What it asks for, and what it never sends</span></h2>
     </div>
     <div class="grid">
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/></svg></div>
         <h3><span data-ko>전체 디스크 접근</span><span data-en>Full Disk Access</span></h3>
-        <p><span data-ko>캐시를 찾으려면 다른 앱의 폴더를 봐야 하고, macOS는 그것을 앱마다 따로 묻습니다. 한 번 허용하면 그 뒤로는 묻지 않습니다.</span>
+        <p><span data-ko>캐시는 다른 앱 폴더 안에 있어서, macOS가 앱마다 따로 허락을 받습니다. 한 번 열어주면 다시 묻지 않습니다.</span>
            <span data-en>Finding caches means looking inside other apps' folders, and macOS asks for each one separately. Grant it once and the prompts stop.</span></p>
       </div>
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg></div>
         <h3><span data-ko>네트워크</span><span data-en>Network</span></h3>
-        <p><span data-ko>새 버전 확인에만 씁니다. 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않습니다. 설정에서 끌 수 있습니다.</span>
+        <p><span data-ko>새 버전이 나왔는지 볼 때만 씁니다. 버전 번호만 읽어오고, 무엇을 찾았는지도 누가 쓰는지도 보내지 않습니다. 꺼둘 수 있습니다.</span>
            <span data-en>Used only to check for a new version. It reads the latest version number and sends nothing about you or what it found. You can turn it off.</span></p>
       </div>
       <div class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8.5 8 9.6 4.6-1.1 8-4.6 8-9.6V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <h3><span data-ko>서명과 공증</span><span data-en>Signed and notarized</span></h3>
-        <p><span data-ko>Apple 공증을 받아 경고 없이 열립니다. 업데이트도 같은 개발자 서명인지 확인한 뒤에만 설치합니다.</span>
+        <p><span data-ko>Apple 공증을 받아 경고 없이 열립니다. 업데이트도 같은 서명인지 확인하고 나서야 설치합니다.</span>
            <span data-en>Notarized by Apple, so it opens without warnings. Updates install only after the signature is verified as ours.</span></p>
       </div>
     </div>
@@ -379,9 +486,9 @@
 
   <section>
     <div class="cta-band reveal">
-      <h2><span data-ko>지금 얼마나 쌓여 있는지 확인해보세요</span><span data-en>See what has piled up</span></h2>
+      <h2><span data-ko>지금 얼마나 쌓였는지 보세요</span><span data-en>See what has piled up</span></h2>
       <p class="lead" style="margin-bottom:26px">
-        <span data-ko>한 번 훑는 데 1~2분, 지우는 것은 당신이 고른 것뿐입니다.</span>
+        <span data-ko>훑는 데 1~2분. 사라지는 건 직접 고른 것뿐입니다.</span>
         <span data-en>A sweep takes a minute or two. Nothing goes anywhere unless you pick it.</span>
       </p>
       <div class="actions">
