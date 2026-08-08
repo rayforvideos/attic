@@ -16,7 +16,7 @@ across your Mac. Only what you pick goes to the Trash, and nothing is deleted on
 
 **[Website](https://rayforvideos.github.io/attic/)** · **[Download](https://github.com/rayforvideos/attic/releases/latest)** · **[한국어](README.ko.md)**
 
-<img src="https://rayforvideos.github.io/attic/screenshot.png" width="400" alt="Attic">
+<img src="https://rayforvideos.github.io/attic/screenshot-en.png" width="400" alt="Attic">
 
 </div>
 
