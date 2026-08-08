@@ -203,7 +203,7 @@
         <button type="button" data-set-lang="ko" aria-pressed="true">한국어</button>
         <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
       </span>
-      <a class="nav-cta" href="https://github.com/rayforvideos/attic/releases/latest">
+      <a class="nav-cta" data-download href="https://github.com/rayforvideos/attic/releases/latest">
         <span data-ko>다운로드</span><span data-en>Download</span>
       </a>
     </nav>
@@ -227,7 +227,7 @@
         Attic finds them. Only what you pick goes to the Trash, and nothing is deleted on its own.</span>
     </p>
     <div class="actions reveal">
-      <a class="btn btn-primary" href="https://github.com/rayforvideos/attic/releases/latest">
+      <a class="btn btn-primary" data-download href="https://github.com/rayforvideos/attic/releases/latest">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
         <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
       </a>
@@ -236,8 +236,8 @@
       </a>
     </div>
     <p class="meta reveal">
-      <span data-ko>macOS 26 이상 · Apple 공증 완료 · 무료</span>
-      <span data-en>macOS 26 or later · Notarized by Apple · Free</span>
+      <span data-ko>macOS 26 이상 · Apple Silicon과 Intel 모두 지원 · Apple 공증 완료</span>
+      <span data-en>macOS 26 or later · Apple Silicon and Intel · Notarized by Apple</span>
     </p>
 
     <div class="shot-frame reveal">
@@ -385,13 +385,13 @@
         <span data-en>A sweep takes a minute or two. Nothing goes anywhere unless you pick it.</span>
       </p>
       <div class="actions">
-        <a class="btn btn-primary" href="https://github.com/rayforvideos/attic/releases/latest">
+        <a class="btn btn-primary" data-download href="https://github.com/rayforvideos/attic/releases/latest">
           <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
         </a>
       </div>
       <p class="meta">
-        <span data-ko>macOS 26 이상 · Apple 공증 완료 · 무료</span>
-        <span data-en>macOS 26 or later · Notarized by Apple · Free</span>
+        <span data-ko>macOS 26 이상 · Apple Silicon과 Intel 모두 지원 · 무료</span>
+        <span data-en>macOS 26 or later · Apple Silicon and Intel · Free</span>
       </p>
     </div>
   </section>
@@ -469,6 +469,26 @@
   } else {
     counters.forEach(el => el.textContent = el.dataset.count);
   }
+
+  // 다운로드 버튼이 DMG를 바로 받게 한다.
+  //
+  // 파일 이름에 버전이 들어 있어서 고정 주소로는 가리킬 수 없다. 최신 릴리스를
+  // 물어봐서 .dmg 자산의 주소로 바꾼다. **실패하면 그대로 둔다** — 링크는 이미
+  // 릴리스 페이지를 가리키고 있으므로 최악이라도 한 번 더 누르면 받을 수 있다.
+  fetch("https://api.github.com/repos/rayforvideos/attic/releases/latest", {
+    headers: { Accept: "application/vnd.github+json" }
+  })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
+    .then(release => {
+      const dmg = (release.assets || []).find(a => (a.name || "").endsWith(".dmg"));
+      if (!dmg) return;
+      document.querySelectorAll("[data-download]").forEach(a => {
+        a.href = dmg.browser_download_url;
+      });
+      const version = (release.tag_name || "").replace(/^v/, "");
+      document.querySelectorAll("[data-version]").forEach(el => { el.textContent = version; });
+    })
+    .catch(() => {});
 
   // 스크롤하면 헤더에 경계선
   const bar = document.getElementById("top-bar");
