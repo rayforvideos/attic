@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attic — 쓰지 않는데 자리만 차지하는 파일을 찾아드려요</title>
+<meta name="description" content="맥에 숨어 있는 캐시와 오래된 파일을 찾아주는 메뉴바 앱. 고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.">
+<link rel="icon" href="favicon.png">
+<meta property="og:title" content="Attic">
+<meta property="og:description" content="쓰지 않는데 자리만 차지하는 파일을 찾아드려요">
+<meta property="og:image" content="screenshot.png">
+<style>
+  :root {
+    --bg: #14181d;
+    --surface: #1b2027;
+    --line: #262d36;
+    --text: #eef1f5;
+    --dim: #98a2b0;
+    --accent: #7fb2e5;
+    --accent-strong: #a9cdf3;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+          "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-strong); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 17px; }
+  .brand img { width: 28px; height: 28px; border-radius: 7px; }
+  nav { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+  nav a { color: var(--dim); }
+  nav a:hover { color: var(--text); }
+  .lang { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .lang button {
+    background: none; border: 0; color: var(--dim); font: inherit; font-size: 13px;
+    padding: 5px 11px; cursor: pointer;
+  }
+  .lang button[aria-pressed="true"] { background: var(--surface); color: var(--text); }
+
+  .hero { padding: 56px 0 40px; text-align: center; }
+  .hero h1 {
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.25; margin: 0 0 18px;
+    letter-spacing: -0.02em; font-weight: 700;
+  }
+  .hero p.sub { font-size: 17px; color: var(--dim); margin: 0 auto 30px; max-width: 620px; }
+  .cta {
+    display: inline-block; background: var(--accent); color: #0d1116;
+    font-weight: 650; font-size: 16px; padding: 13px 26px; border-radius: 10px;
+  }
+  .cta:hover { background: var(--accent-strong); color: #0d1116; }
+  .meta { margin-top: 13px; font-size: 13px; color: var(--dim); }
+
+  .shot { margin: 44px auto 0; max-width: 420px; }
+  .shot img {
+    width: 100%; height: auto; display: block; border-radius: 14px;
+    border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+
+  section { padding: 52px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 22px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lead { color: var(--dim); margin: 0 0 26px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.65; }
+
+  ul.rules { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ul.rules li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  ul.rules strong { display: block; margin-bottom: 4px; font-size: 15px; }
+  ul.rules span { color: var(--dim); font-size: 14px; }
+
+  footer { padding: 36px 0 60px; color: var(--dim); font-size: 14px; text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--dim); text-decoration: underline; }
+  footer a:hover { color: var(--text); }
+
+  [data-en] { display: none; }
+  html[lang="en"] [data-ko] { display: none; }
+  html[lang="en"] [data-en] { display: revert; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="brand"><img src="icon.png" alt=""> Attic</span>
+    <nav>
+      <a href="https://github.com/rayforvideos/attic">
+        <span data-ko>소스</span><span data-en>Source</span>
+      </a>
+      <a href="https://github.com/rayforvideos/attic/releases">
+        <span data-ko>변경 내역</span><span data-en>Releases</span>
+      </a>
+      <span class="lang">
+        <button type="button" data-set-lang="ko" aria-pressed="true">한국어</button>
+        <button type="button" data-set-lang="en" aria-pressed="false">English</button>
+      </span>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>
+      <span data-ko>쓰지 않는데<br>자리만 차지하는 파일을 찾아드려요</span>
+      <span data-en>Find the files you stopped using<br>but never deleted</span>
+    </h1>
+    <p class="sub">
+      <span data-ko>맥 곳곳에 숨어 있는 앱 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드를 찾습니다.
+        고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.</span>
+      <span data-en>App caches, stale build output, and downloads you forgot are scattered all over your Mac.
+        Attic finds them. Only what you pick goes to the Trash, and nothing is deleted on its own.</span>
+    </p>
+    <a class="cta" href="https://github.com/rayforvideos/attic/releases/latest">
+      <span data-ko>macOS용 다운로드</span><span data-en>Download for macOS</span>
+    </a>
+    <p class="meta">
+      <span data-ko>macOS 26 이상 · Apple 공증 완료 · 무료</span>
+      <span data-en>macOS 26 or later · Notarized by Apple · Free</span>
+    </p>
+
+    <div class="shot">
+      <img src="screenshot.png" alt="Attic">
+    </div>
+  </div>
+
+  <section>
+    <h2><span data-ko>무엇을 찾나요</span><span data-en>What it finds</span></h2>
+    <p class="lead">
+      <span data-ko>지워도 되는 것과 아닌 것을 구분해서, 종류별로 모아 보여줍니다.</span>
+      <span data-en>Grouped by kind, with what is safe to remove kept separate from what is not.</span>
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h3><span data-ko>앱이 만든 캐시</span><span data-en>App caches</span></h3>
+        <p><span data-ko>브라우저 기반 앱이 쌓아둔 웹 캐시, 앱마다 만드는 임시 파일. 지워도 다시 만들어집니다.</span>
+           <span data-en>Web caches from Electron apps and per-app temporary files. They come back on their own.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-ko>오래된 빌드 산출물</span><span data-en>Stale build output</span></h3>
+        <p><span data-ko>Xcode 빌드 결과, 기기 지원 파일, 패키지 매니저 캐시, 안 쓰는 node_modules.</span>
+           <span data-en>Xcode derived data, device support files, package manager caches, unused node_modules.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-ko>받아두고 잊은 다운로드</span><span data-en>Forgotten downloads</span></h3>
+        <p><span data-ko>설치하고 남은 파일, 오래된 스크린샷, 큰 파일. 되돌릴 수 없는 것이라 자동으로 선택되지 않습니다.</span>
+           <span data-en>Installers you already used, old screenshots, large files. Never auto-selected, since deleting them is permanent.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-ko>숨어서 도는 것들</span><span data-en>Things running quietly</span></h3>
+        <p><span data-ko>로그인·부팅할 때 함께 올라오는 프로그램과, 지워진 앱이 남긴 자동 실행 등록.</span>
+           <span data-en>Programs that launch with your Mac, and startup entries left behind by software you removed.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span data-ko>지키는 것</span><span data-en>What it promises</span></h2>
+    <p class="lead">
+      <span data-ko>디스크를 맡기는 앱이라, 무엇을 하지 않는지가 먼저입니다.</span>
+      <span data-en>You are handing it your disk, so what it will not do comes first.</span>
+    </p>
+    <ul class="rules">
+      <li>
+        <strong><span data-ko>고른 것만 휴지통으로 옮깁니다</span><span data-en>Only what you pick, and only to the Trash</span></strong>
+        <span data-ko>앱이 알아서 지우는 일은 없습니다. 되돌릴 수 있어야 하니까요.</span>
+        <span data-en>Nothing is deleted on its own. You need to be able to undo it.</span>
+      </li>
+      <li>
+        <strong><span data-ko>숫자를 지어내지 않습니다</span><span data-en>It never invents a number</span></strong>
+        <span data-ko>크기를 재지 못한 항목은 목록에서 빼고 그 사실을 알립니다. 끝까지 훑지 못한 폴더가 있으면 "비울 게 없어요"라고 말하지 않습니다.</span>
+        <span data-en>If it could not measure something, it leaves it out and says so. If a folder could not be fully read, it will not claim there is nothing to clean.</span>
+      </li>
+      <li>
+        <strong><span data-ko>옮기기 직전에 다시 잽니다</span><span data-en>It measures again right before moving</span></strong>
+        <span data-ko>스캔한 값은 오래됐을 수 있습니다. 실제로 비는 용량은 그 순간에 다시 잰 숫자입니다.</span>
+        <span data-en>A scan result can be stale. The freed space you see is measured at the moment it happens.</span>
+      </li>
+      <li>
+        <strong><span data-ko>되돌릴 수 없는 것은 그렇다고 말합니다</span><span data-en>It tells you when something cannot come back</span></strong>
+        <span data-ko>캐시는 다시 만들어지지만 받은 사진은 그렇지 않습니다. 아는 만큼만 말합니다.</span>
+        <span data-en>A cache rebuilds itself. A photo someone sent you does not. It only claims what it knows.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span data-ko>권한과 통신</span><span data-en>Permissions and network</span></h2>
+    <div class="grid">
+      <div class="card">
+        <h3><span data-ko>전체 디스크 접근</span><span data-en>Full Disk Access</span></h3>
+        <p><span data-ko>캐시를 찾으려면 다른 앱의 폴더를 봐야 하고, macOS는 그것을 앱마다 따로 묻습니다. 한 번 허용하면 그 뒤로는 묻지 않습니다.</span>
+           <span data-en>Finding caches means looking inside other apps' folders, and macOS asks for each one separately. Grant it once and the prompts stop.</span></p>
+      </div>
+      <div class="card">
+        <h3><span data-ko>네트워크</span><span data-en>Network</span></h3>
+        <p><span data-ko>새 버전 확인에만 씁니다. 최신 버전 번호만 읽고, 무엇을 찾았는지나 누구인지는 보내지 않습니다. 설정에서 끌 수 있습니다.</span>
+           <span data-en>Used only to check for a new version. It reads the latest version number and sends nothing about you or what it found. You can turn it off.</span></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/rayforvideos/attic">GitHub</a> ·
+      <a href="https://github.com/rayforvideos/attic/blob/main/LICENSE.md">
+        <span data-ko>라이선스</span><span data-en>License</span></a>
+    </p>
+    <p>© 2026 Sangjun Park</p>
+  </div>
+</footer>
+
+<script>
+  const buttons = document.querySelectorAll("[data-set-lang]");
+  function setLang(lang) {
+    document.documentElement.lang = lang;
+    buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
+    try { localStorage.setItem("attic-lang", lang); } catch (e) {}
+  }
+  buttons.forEach(b => b.addEventListener("click", () => setLang(b.dataset.setLang)));
+  let saved = null;
+  try { saved = localStorage.getItem("attic-lang"); } catch (e) {}
+  // 괄호가 없으면 saved가 "en"이어도 (saved || …)가 참이라 항상 한국어가 된다.
+  const prefersKorean = (navigator.language || "").toLowerCase().startsWith("ko");
+  setLang(saved || (prefersKorean ? "ko" : "en"));
+</script>
+</body>
+</html>
