@@ -73,6 +73,22 @@
     color: var(--text) !important; font-size: 13px; transition: border-color .18s, background .18s;
   }
   .nav-cta:hover { border-color: var(--accent); background: var(--accent-dim); }
+  /* 글자가 세로로 쪼개지면 버튼처럼 안 보인다 */
+  .nav-cta, .lang button, nav a { white-space: nowrap; }
+
+  /* 좁은 화면에서는 섹션 링크를 접는다. 셋을 다 밀어 넣으면 한 글자씩 줄바꿈되어
+     "기 능 / 원 칙"처럼 읽힌다(실제로 그랬다). 스크롤하면 어차피 다 나오는
+     내용이라, 좁을 때 남길 것은 브랜드·언어·다운로드 셋이면 충분하다. */
+  @media (max-width: 560px) {
+    header .wrap { padding: 0 18px; gap: 10px; }
+    nav { gap: 12px; }
+    nav > a:not(.nav-cta) { display: none; }
+    .lang button { padding: 5px 8px; }
+    .nav-cta { padding: 6px 11px; }
+  }
+  @media (max-width: 420px) {
+    .wrap { padding: 0 18px; }
+  }
 
   /* ── 히어로 ───────────────────────────────────────── */
   .hero { position: relative; padding: 92px 0 20px; text-align: center; }
@@ -275,8 +291,8 @@
       </a>
     </div>
     <p class="meta reveal">
-      <span data-ko>macOS 26 이상 · Apple Silicon과 Intel 모두 지원 · 받아서 열면 바로 실행됩니다</span>
-      <span data-en>macOS 26 or later · Apple Silicon and Intel · Opens without a warning</span>
+      <span data-ko>macOS 15 이상 · Apple Silicon과 Intel 모두 지원 · 받아서 열면 바로 실행됩니다</span>
+      <span data-en>macOS 15 or later · Apple Silicon and Intel · Opens without a warning</span>
       <span class="ver" hidden>
         <span data-ko>최신 버전</span><span data-en>Latest</span> <b data-version></b>
       </span>
@@ -524,8 +540,8 @@
         </a>
       </div>
       <p class="meta">
-        <span data-ko>macOS 26 이상 · Apple Silicon과 Intel 모두 지원 · 무료</span>
-        <span data-en>macOS 26 or later · Apple Silicon and Intel · Free</span>
+        <span data-ko>macOS 15 이상 · Apple Silicon과 Intel 모두 지원 · 무료</span>
+        <span data-en>macOS 15 or later · Apple Silicon and Intel · Free</span>
       </p>
     </div>
   </section>
@@ -545,7 +561,10 @@
 <script>
   // 언어 전환
   const langButtons = document.querySelectorAll("[data-set-lang]");
-  function setLang(lang) {
+  // persist는 사용자가 직접 버튼을 눌렀을 때만 true다. 자동으로 고른 언어까지
+  // 저장하면, 한국어 브라우저로 영어 페이지(en.html)를 열었을 때 저장된 "ko"가
+  // 그 페이지의 기본값을 이겨서 한국어로 뜬다.
+  function setLang(lang, persist) {
     document.documentElement.lang = lang;
     langButtons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
     // 화면 사진도 그 언어의 것으로 바꾼다. 영어 페이지에 한국어 화면을 보여주면
@@ -557,9 +576,11 @@
       const alt = lang === "en" ? img.dataset.altEn : img.dataset.altKo;
       if (alt) img.alt = alt;
     });
-    try { localStorage.setItem("attic-lang", lang); } catch (e) {}
+    if (persist) {
+      try { localStorage.setItem("attic-lang", lang); } catch (e) {}
+    }
   }
-  langButtons.forEach(b => b.addEventListener("click", () => setLang(b.dataset.setLang)));
+  langButtons.forEach(b => b.addEventListener("click", () => setLang(b.dataset.setLang, true)));
   let savedLang = null;
   try { savedLang = localStorage.getItem("attic-lang"); } catch (e) {}
   const prefersKorean = (navigator.language || "").toLowerCase().startsWith("ko");
