@@ -13,7 +13,7 @@ deleted on its own.
 
 [![Latest](https://img.shields.io/github/v/release/rayforvideos/attic?label=latest&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/rayforvideos/attic/total?label=downloads&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases)
-[![macOS 26+](https://img.shields.io/badge/macOS-26%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
+[![macOS 15+](https://img.shields.io/badge/macOS-15%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![MIT](https://img.shields.io/badge/license-MIT-1b2027?style=flat-square)](LICENSE)
 
 **[Website](https://rayforvideos.github.io/attic/)** · **[Download](https://github.com/rayforvideos/attic/releases/latest)** · **[한국어](README.ko.md)**
@@ -61,7 +61,7 @@ else is refused, and it verifies once more right before acting.
 Open the DMG and drag Attic to your Applications folder. Launch it and a disk icon appears in
 the menu bar. It is notarized by Apple, so it opens without warnings.
 
-Requires macOS 26 or later. Universal binary: Apple Silicon and Intel.
+Requires macOS 15 (Sequoia) or later. Universal binary: Apple Silicon and Intel.
 
 ## Permissions and network
 

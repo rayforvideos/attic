@@ -12,7 +12,7 @@ Xcode 빌드 산출물, 기기 지원 파일, 손 뗀 프로젝트의 `node_modu
 
 [![최신 버전](https://img.shields.io/github/v/release/rayforvideos/attic?label=%EC%B5%9C%EC%8B%A0&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![다운로드](https://img.shields.io/github/downloads/rayforvideos/attic/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases)
-[![macOS 26+](https://img.shields.io/badge/macOS-26%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
+[![macOS 15+](https://img.shields.io/badge/macOS-15%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![MIT](https://img.shields.io/badge/license-MIT-1b2027?style=flat-square)](LICENSE)
 
 **[웹사이트](https://rayforvideos.github.io/attic/)** · **[다운로드](https://github.com/rayforvideos/attic/releases/latest)** · **[English](README.md)**
@@ -59,7 +59,7 @@ Xcode 빌드 산출물, 기기 지원 파일, 손 뗀 프로젝트의 `node_modu
 DMG를 열고 Attic을 응용 프로그램 폴더로 끌어다 놓으세요. 실행하면 메뉴바에 디스크 아이콘이
 생깁니다. Apple 공증을 받았으므로 경고 없이 열립니다.
 
-macOS 26 이상이 필요합니다.
+macOS 15 세쿼이아 이상이 필요합니다.
 
 ## 권한과 통신
 
