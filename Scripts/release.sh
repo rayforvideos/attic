@@ -31,7 +31,10 @@ NOTARY_PROFILE=${NOTARY_PROFILE:-attic-notary}
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
 APP=build/Attic.app
-DMG="build/Attic-$VERSION.dmg"
+# 파일 이름에 버전을 넣지 않는다. 고정 이름이라야
+# github.com/…/releases/latest/download/Attic.dmg 가 늘 최신을 가리키고,
+# 웹사이트 다운로드 버튼을 버전마다 고칠 필요가 없다.
+DMG="build/Attic.dmg"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 die() { printf '\033[31m실패: %s\033[0m\n' "$1" >&2; exit 1; }
