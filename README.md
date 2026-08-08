@@ -6,8 +6,10 @@
 
 **Finds the files you stopped using but never deleted.**
 
-App caches, stale build output, downloads you forgot about. Attic finds what is scattered
-across your Mac. Only what you pick goes to the Trash, and nothing is deleted on its own.
+Xcode derived data, device support files, `node_modules` from projects you moved on from,
+package manager caches. Developer Macs pile up the most, and Attic goes looking. It finds app
+caches and forgotten downloads too. Only what you pick goes to the Trash, and nothing is
+deleted on its own.
 
 [![Latest](https://img.shields.io/github/v/release/rayforvideos/attic?label=latest&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/rayforvideos/attic/total?label=downloads&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases)

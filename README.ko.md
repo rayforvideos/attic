@@ -6,7 +6,8 @@
 
 **쓰지 않는데 자리만 차지하는 파일을 찾아드려요.**
 
-맥 곳곳에 숨어 있는 앱 캐시, 오래된 빌드 산출물, 받아두고 잊은 다운로드를 찾습니다.
+Xcode 빌드 산출물, 기기 지원 파일, 손 뗀 프로젝트의 `node_modules`, 패키지 매니저 캐시.
+개발하면서 쌓인 것이 특히 많이 나옵니다. 앱 캐시와 받아두고 잊은 다운로드도 함께 찾습니다.
 고른 것만 휴지통으로 옮기고, 앱이 알아서 지우지 않습니다.
 
 [![최신 버전](https://img.shields.io/github/v/release/rayforvideos/attic?label=%EC%B5%9C%EC%8B%A0&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
