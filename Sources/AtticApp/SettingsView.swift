@@ -195,6 +195,7 @@ struct SettingsView: View {
                     }))
                 Text("받아두고 잊은 설치 파일, 오래된 스크린샷, 큰 파일을 함께 찾아요 · 캐시와 달리 지우면 되돌릴 수 없어서 자동으로 선택되지는 않아요")
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Picker(L("오래된 기준"), selection: Binding(
                     get: { staleDays },
                     set: { value in
@@ -237,6 +238,7 @@ struct SettingsView: View {
                 Text(L("비워 두면 홈의 %@ 폴더를 찾아봐요 · 개발자가 아니면 비워 두세요",
                        DiagnosticsModel.defaultProjectRootNames.joined(separator: "·")))
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Section("손대지 말 폴더 (줄바꿈 구분)") {
                 TextEditor(text: $protectedPathsText)
@@ -249,6 +251,7 @@ struct SettingsView: View {
                     }
                 Text("여기 적은 폴더는 찾기와 정리에서 모두 빼요 · ~ 사용 가능")
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding()
