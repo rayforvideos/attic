@@ -12,7 +12,7 @@
 [![최신 버전](https://img.shields.io/github/v/release/rayforvideos/attic?label=%EC%B5%9C%EC%8B%A0&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![다운로드](https://img.shields.io/github/downloads/rayforvideos/attic/total?label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=7fb2e5&style=flat-square)](https://github.com/rayforvideos/attic/releases)
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
-[![PolyForm Shield](https://img.shields.io/badge/license-PolyForm%20Shield-1b2027?style=flat-square)](LICENSE.md)
+[![MIT](https://img.shields.io/badge/license-MIT-1b2027?style=flat-square)](LICENSE)
 
 **[웹사이트](https://rayforvideos.github.io/attic/)** · **[다운로드](https://github.com/rayforvideos/attic/releases/latest)**
 
@@ -83,7 +83,7 @@ PR을 환영합니다. `swift test`만 통과하면 되고, 앱을 직접 빌드
 
 ## 라이선스
 
-[PolyForm Shield 1.0.0](LICENSE.md). 개인이든 회사든 자유롭게 쓰고, 고치고, 배포할 수 있습니다.
-다만 이 소프트웨어와 경쟁하는 제품을 만드는 데는 쓸 수 없습니다.
+[MIT](LICENSE). 개인이든 회사든 자유롭게 쓰고, 고치고, 배포하고, 팔아도 됩니다.
+저작권 표시만 남겨주세요.
 
 Copyright (c) 2026 Sangjun Park

@@ -68,18 +68,17 @@ swift test
 
 ## 받기 어려운 것
 
-- **새 라이선스의 의존성 추가.** 이 앱은 지금 외부 의존성이 없고, 그 상태를 유지하려 합니다
+- **외부 의존성 추가.** 이 앱은 지금 의존성이 하나도 없고, 그 상태를 유지하려 합니다
 - **자동으로 지우는 기능.** 사람이 고르는 단계를 없애자는 제안은 받지 않습니다
 - **사용 정보 수집.** 네트워크는 새 버전 확인에만 씁니다
 
 ## 라이선스
 
-이 프로젝트는 [PolyForm Shield 1.0.0](LICENSE.md)입니다. OSI 승인 오픈소스가 아니라
-소스 공개(source-available) 라이선스입니다. 자유롭게 쓰고 고치고 배포할 수 있지만,
-이 소프트웨어와 경쟁하는 제품을 만드는 데는 쓸 수 없습니다.
+이 프로젝트는 [MIT](LICENSE)입니다. 자유롭게 쓰고, 고치고, 배포하고, 팔아도 됩니다.
+저작권 표시만 남기면 됩니다.
 
-**PR을 보내면 그 코드도 같은 라이선스로 제공하는 것에 동의하는 것으로 봅니다.**
-저작권은 기여자 본인에게 그대로 있습니다.
+**PR을 보내면 그 코드도 MIT로 제공하는 것에 동의하는 것으로 봅니다.**
+저작권은 기여자 본인에게 그대로 있습니다. CLA는 없습니다.
 
 ---
 
@@ -154,9 +153,8 @@ If you fixed a bug, check that your test fails against the code before the fix.
 
 ## License
 
-This project uses [PolyForm Shield 1.0.0](LICENSE.md). It is source-available, not
-OSI-approved open source: use, modify and share it freely, but not to build something that
-competes with it.
+This project is [MIT](LICENSE) licensed. Use it, change it, ship it, sell it. Just keep the
+copyright notice.
 
-**By sending a PR you agree that your contribution is provided under the same license.**
-You keep the copyright to what you wrote.
+**By sending a PR you agree that your contribution is provided under the MIT license.**
+You keep the copyright to what you wrote. There is no CLA.
