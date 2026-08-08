@@ -14,7 +14,7 @@
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-1b2027?style=flat-square)](https://github.com/rayforvideos/attic/releases/latest)
 [![MIT](https://img.shields.io/badge/license-MIT-1b2027?style=flat-square)](LICENSE)
 
-**[웹사이트](https://rayforvideos.github.io/attic/)** · **[다운로드](https://github.com/rayforvideos/attic/releases/latest)**
+**[웹사이트](https://rayforvideos.github.io/attic/)** · **[다운로드](https://github.com/rayforvideos/attic/releases/latest)** · **[English](README.en.md)**
 
 <img src="https://rayforvideos.github.io/attic/screenshot.png" width="400" alt="Attic 화면">
 
