@@ -11,11 +11,22 @@ cd "$(dirname "$0")/.."
 # 번역 자리표시자가 어긋나면 실행 중 SIGSEGV로 죽는다 — 빌드 전에 막는다.
 python3 Scripts/check-strings.py || exit 1
 
-swift build -c release
+# 인텔 맥에서도 돌아야 한다. macOS 26은 인텔을 지원하는 마지막 버전이고,
+# arm64로만 빌드하면 그 사용자들은 아예 실행할 수 없다(실측: 배포본이 arm64
+# 전용이었다). 유니버설은 빌드가 조금 느려지는 대신 둘 다 담는다.
+swift build -c release --arch arm64 --arch x86_64
 APP=build/Attic.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/AtticApp "$APP/Contents/MacOS/Attic"
+BIN=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/AtticApp
+cp "$BIN" "$APP/Contents/MacOS/Attic"
+# 두 아키텍처가 실제로 들어갔는지 확인한다. 한쪽만 담기면 그 사용자에게는
+# "열 수 없는 앱"이 되고, 우리는 알 방법이 없다.
+archs=$(lipo -archs "$APP/Contents/MacOS/Attic")
+case "$archs" in
+    *arm64*x86_64*|*x86_64*arm64*) ;;
+    *) echo "FAIL: 유니버설이 아닙니다 ($archs)" >&2; exit 1 ;;
+esac
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # 언어 리소스. SPM 리소스 번들을 쓰지 않고 .app에 직접 넣는다 — Bundle.main이
