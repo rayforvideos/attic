@@ -61,6 +61,12 @@ else is refused, and it verifies once more right before acting.
 Open the DMG and drag Attic to your Applications folder. Launch it and a disk icon appears in
 the menu bar. It is notarized by Apple, so it opens without warnings.
 
+Or with Homebrew:
+
+```sh
+brew install rayforvideos/tap/attic
+```
+
 Requires macOS 15 (Sequoia) or later. Universal binary: Apple Silicon and Intel.
 
 ## Permissions and network

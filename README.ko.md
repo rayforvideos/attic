@@ -59,6 +59,12 @@ Xcode 빌드 산출물, 기기 지원 파일, 손 뗀 프로젝트의 `node_modu
 DMG를 열고 Attic을 응용 프로그램 폴더로 끌어다 놓으세요. 실행하면 메뉴바에 디스크 아이콘이
 생깁니다. Apple 공증을 받았으므로 경고 없이 열립니다.
 
+Homebrew로 설치할 수도 있습니다:
+
+```sh
+brew install rayforvideos/tap/attic
+```
+
 macOS 15 세쿼이아 이상이 필요합니다.
 
 ## 권한과 통신
