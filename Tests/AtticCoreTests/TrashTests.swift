@@ -55,6 +55,26 @@ struct TrashTests {
         #expect(await Trash(directory: missing).inspect() == nil)
     }
 
+    /// 방금 옮긴 직후에는 양과 무관하게 비우기를 권한다 — 사용자가 직접 옮긴
+    /// 맥락이 있으니 잔소리가 아니다. 평소에는 100MB 문턱을 그대로 쓴다.
+    @Test func offersEmptyingRightAfterMoveRegardlessOfSize() {
+        let small = TrashContents(bytes: 1 << 20, itemCount: 3)
+        #expect(small.shouldOfferEmptying(justMoved: true))
+        #expect(!small.shouldOfferEmptying(justMoved: false))
+    }
+
+    /// 빈 휴지통은 옮긴 직후라도 비우라고 하지 않는다 — 비울 것이 없다.
+    @Test func neverOffersEmptyingEmptyTrash() {
+        let empty = TrashContents(bytes: 0, itemCount: 0)
+        #expect(!empty.shouldOfferEmptying(justMoved: true))
+    }
+
+    /// 옮긴 적이 없어도 100MB를 넘으면 기존대로 권한다.
+    @Test func offersEmptyingBigTrashWithoutMove() {
+        let big = TrashContents(bytes: 200 << 20, itemCount: 1)
+        #expect(big.shouldOfferEmptying(justMoved: false))
+    }
+
     @Test func emptiesEverythingIncludingDirectories() async throws {
         let (trash, root) = try makeTrash()
         defer { try? FileManager.default.removeItem(at: root) }

@@ -36,6 +36,8 @@ struct SpacePane: View {
     var isFirstRun: Bool = false
     var onRecheckAccess: () -> Void = {}
     var trash: TrashContents?
+    /// 이번 실행에서 옮긴 적이 있으면 휴지통이 100MB 미만이어도 비우기를 보여준다.
+    var hasMovedToTrash: Bool = false
     var isEmptyingTrash: Bool = false
     let onScan: () -> Void
     let onMoveToTrash: ([ReclaimItem]) -> Void
@@ -419,7 +421,7 @@ struct SpacePane: View {
     /// 정리의 마지막 한 걸음. 여기까지 오지 않으면 「여유」는 1바이트도 늘지 않는다.
     @ViewBuilder
     private var trashLine: some View {
-        if let trash, trash.isWorthEmptying {
+        if let trash, trash.shouldOfferEmptying(justMoved: hasMovedToTrash) {
             Divider().padding(.vertical, 2)
             if confirmingEmpty {
                 VStack(alignment: .leading, spacing: 5) {

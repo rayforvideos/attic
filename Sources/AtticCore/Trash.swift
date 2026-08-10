@@ -17,6 +17,13 @@ public struct TrashContents: Sendable, Equatable {
     /// 비우라고 권할 만한가. 20MB짜리 휴지통을 두고 "비우면 여유가 늘어나요"라고
     /// 하면 잔소리가 된다 — 화면에 한 줄을 쓸 값어치가 있어야 보여준다.
     public var isWorthEmptying: Bool { bytes >= 100 << 20 }
+
+    /// 방금 옮긴 직후에는 양과 무관하게 비우기를 권한다. 사용자가 직접 옮긴
+    /// 맥락에서는 잔소리가 아니라 정리의 마지막 한 걸음 안내다 — 이게 없으면
+    /// 100MB 미만을 옮긴 사람은 비우기 버튼을 영영 보지 못한다(실사용 보고).
+    public func shouldOfferEmptying(justMoved: Bool) -> Bool {
+        justMoved ? !isEmpty : isWorthEmptying
+    }
 }
 
 public struct TrashEmptyOutcome: Sendable, Equatable {

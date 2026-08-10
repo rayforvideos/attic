@@ -38,6 +38,10 @@ final class DiagnosticsModel {
     private(set) var updateNote: UserNote?
     private(set) var trash: TrashContents?
     private(set) var isEmptyingTrash = false
+    /// 이번 실행에서 휴지통으로 옮긴 적이 있는지. 옮긴 직후에는 양과 무관하게
+    /// "비우기"를 권해야 한다 — 100MB 문턱만 쓰면 그보다 적게 옮긴 사람은
+    /// 비우기 버튼을 영영 보지 못한다(실사용 보고).
+    private(set) var hasMovedToTrash = false
     /// 휴지통으로 옮기는 중. 이 값은 뷰가 아니라 모델이 들고 있어야 한다 —
     /// 옮기는 동안 휴지통을 비우거나 앱을 교체하는 것을 막아야 하는데, 그 판단이
     /// 뷰에 흩어져 있으면 다른 경로(도커 메뉴 등)로 들어올 때 뚫린다.
@@ -667,6 +671,7 @@ final class DiagnosticsModel {
                     size, Int64(skipped))
                 : L("%@를 휴지통으로 옮겼어요 · 비우면 공간이 확보돼요", size)
             spaceNote = .ok(note)
+            hasMovedToTrash = true
         }
 
         // 누적 성과에는 **실측된 값만** 넣는다 — 재측정에 실패한 값이 섞이면

@@ -67,6 +67,7 @@ struct PopoverView: View {
             updateNote: model.updateNote,
             onInstallUpdate: { Task { await model.installUpdate() } },
             trash: model.trash,
+            hasMovedToTrash: model.hasMovedToTrash,
             isEmptyingTrash: model.isEmptyingTrash,
             onEmptyTrash: { Task { await model.emptyTrash() } },
             onQuit: { NSApp.terminate(nil) },
@@ -117,6 +118,7 @@ struct PopoverBody: View {
     var updateNote: UserNote?
     var onInstallUpdate: () -> Void = {}
     let trash: TrashContents?
+    var hasMovedToTrash: Bool = false
     let isEmptyingTrash: Bool
     let onEmptyTrash: () -> Void
     let onQuit: () -> Void
@@ -167,7 +169,8 @@ struct PopoverBody: View {
                             hasFullDiskAccess: hasFullDiskAccess,
                             isFirstRun: isFirstRun,
                             onRecheckAccess: onRecheckAccess,
-                            trash: trash, isEmptyingTrash: isEmptyingTrash,
+                            trash: trash, hasMovedToTrash: hasMovedToTrash,
+                            isEmptyingTrash: isEmptyingTrash,
                             onScan: onScanSpace,
                             onMoveToTrash: onMoveToTrash,
                             onEmptyTrash: onEmptyTrash,
