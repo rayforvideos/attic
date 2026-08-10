@@ -17,6 +17,8 @@ final class DiagnosticsModel {
     private(set) var incompleteRoots: [String] = []
     /// 목록에서 생략한 자잘한 앱 캐시(개수, 합계).
     private(set) var smallCaches: (count: Int, bytes: UInt64) = (0, 0)
+    /// 실행 중인 앱·프로세스가 쓰고 있어 목록에서 뺀 항목 — 누가 쓰는지 함께.
+    private(set) var skippedInUse: [ScanReport.InUseSkip] = []
     private(set) var isScanningSpace = false
     /// 한 번이라도 훑어봤는지. 뷰가 아니라 모델이 기억해야 한다 — 뷰 로컬 상태로 두면
     /// 탭을 옮겼다 오거나 뷰가 다시 만들어질 때 결과가 있는데도 시작 화면이 뜬다.
@@ -548,6 +550,7 @@ final class DiagnosticsModel {
         unmeasuredNames = scanReport.unmeasuredNames
         incompleteRoots = scanReport.incompleteRoots
         smallCaches = (scanReport.smallCachesSkipped, scanReport.smallCachesBytes)
+        skippedInUse = scanReport.skippedInUse
         diskSpace = diskProbe.snapshot()
         hasScannedSpace = true
         spaceResultsFromDisk = false
@@ -697,7 +700,7 @@ final class DiagnosticsModel {
     private func refusalText(_ reason: ReclaimRefusal) -> String {
         switch reason {
         case .outsideAllowedRoots: L("허용된 경로 밖이에요")
-        case .inUse: L("실행 중인 앱이 쓰고 있어요 · 끄면 정리할 수 있어요")
+        case .inUse(let process): L("%@이(가) 쓰고 있어요 · 끄면 정리할 수 있어요", process)
         case .symlink: L("심볼릭 링크로 바뀌어 있어요")
         case .tooRecent: L("최근에 쓴 프로젝트예요")
         case .missingLockfile: L("잠금 파일이 없는 프로젝트예요")

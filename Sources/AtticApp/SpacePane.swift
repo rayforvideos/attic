@@ -23,6 +23,8 @@ struct SpacePane: View {
     var incompleteRoots: [String] = []
     /// 목록에서 생략한 자잘한 앱 캐시 — 생략했다는 사실을 숨기지 않는다.
     var smallCaches: (count: Int, bytes: UInt64) = (0, 0)
+    /// 실행 중인 앱·프로세스가 쓰고 있어 뺀 항목 — 끄면 나온다는 안내와 함께.
+    var skippedInUse: [ScanReport.InUseSkip] = []
     let isScanning: Bool
     let scanProgress: ScanProgress?
     let scanStartedAt: Date?
@@ -117,6 +119,18 @@ struct SpacePane: View {
                     Text(L("자잘한 앱 캐시 %lld개(%@)는 목록에서 생략했어요",
                            smallCaches.count, SizeText.compact(smallCaches.bytes)))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
+                }
+                if !skippedInUse.isEmpty {
+                    // "shop (node)"처럼 누가 쓰는지 같이 적는다. 항목 이름에 이미
+                    // 앱 이름이 들어 있으면(예: "Slack (Cache)") 겹쳐 적지 않는다.
+                    let entries = skippedInUse.map { skip in
+                        skip.name.localizedCaseInsensitiveContains(skip.process)
+                            ? skip.name : "\(skip.name) (\(skip.process))"
+                    }
+                    Text(L("쓰는 중이라 뺌: %@ — 끄고 다시 찾아보면 나와요",
+                           entries.joined(separator: ", ")))
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .lineLimit(2)
                 }
                 if !unmeasuredNames.isEmpty {
                     HStack(spacing: 5) {

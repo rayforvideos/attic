@@ -66,8 +66,9 @@ public struct Reclaimer: Sendable {
         for item in items {
             let fm = FileManager.default
 
-            if running.isInUse(path: item.path, kind: item.kind, home: guardian.home) {
-                refused.append((item.path, .inUse))
+            if let process = running.culprit(path: item.path, kind: item.kind,
+                                             home: guardian.home) {
+                refused.append((item.path, .inUse(by: process)))
                 continue
             }
 

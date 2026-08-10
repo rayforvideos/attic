@@ -60,17 +60,33 @@ public struct ScanReport: Sendable, Equatable {
     /// 이번에 실제로 재본 (경로, 크기). 다음 스캔에서 다시 재지 않기 위해
     /// 호출부가 저장한다 — 캐시에서 재사용한 값은 여기 들어가지 않는다.
     public var measured: [String: UInt64] = [:]
+    /// 실행 중인 앱·프로세스가 쓰고 있어 목록에서 뺀 항목. 조용히 빼면
+    /// "비울 게 없어요"가 거짓이 되고, 누가 쓰는지 말해야 사용자가 끄고
+    /// 다시 훑을 수 있다.
+    public var skippedInUse: [InUseSkip] = []
+
+    public struct InUseSkip: Sendable, Equatable {
+        public let name: String     // 항목의 사람 이름 (예: "shop", "Slack (Cache)")
+        public let process: String  // 쓰고 있는 앱·프로세스 이름
+
+        public init(name: String, process: String) {
+            self.name = name
+            self.process = process
+        }
+    }
 
     public init(items: [ReclaimItem], unmeasuredNames: [String],
                 incompleteRoots: [String] = [],
                 measured: [String: UInt64] = [:],
-                smallCachesSkipped: Int = 0, smallCachesBytes: UInt64 = 0) {
+                smallCachesSkipped: Int = 0, smallCachesBytes: UInt64 = 0,
+                skippedInUse: [InUseSkip] = []) {
         self.measured = measured
         self.items = items
         self.unmeasuredNames = unmeasuredNames
         self.incompleteRoots = incompleteRoots
         self.smallCachesSkipped = smallCachesSkipped
         self.smallCachesBytes = smallCachesBytes
+        self.skippedInUse = skippedInUse
     }
 }
 
@@ -197,15 +213,21 @@ public struct ReclaimScanner: Sendable {
         // (실측: 84개 du 92초 vs 캐시 85개 23초).
         onProgress?(ScanProgress(done: 0, total: 0, current: L("훑는 중")))
         // 실행 중인 앱의 캐시·살아 있는 프로세스가 물고 있는 node_modules는
-        // 후보에서 뺀다. 옮겨봐야 휴지통에서 "사용 중"으로 되돌아온다.
+        // 후보에서 뺀다. 옮겨봐야 휴지통에서 "사용 중"으로 되돌아온다. 뺀
+        // 항목은 누가 쓰는지와 함께 보고한다 — 사용자가 끄고 다시 훑을 수 있게.
         let running = inUse ?? ReclaimInUse(samples: ProcessSampler().sample())
+        var skippedInUse: [ScanReport.InUseSkip] = []
         let admitted = work.filter { unit in
             let kind = unit.kind ?? .nodeModules
-            if running.isInUse(path: unit.path, kind: kind, home: home) { return false }
-            if let kind = unit.kind {
-                return passesGuard(unit.path, kind: kind, guardian: guardian)
+            let passes = unit.kind.map { passesGuard(unit.path, kind: $0, guardian: guardian) }
+                ?? passesNodeModulesGuard(unit.path, guardian: guardian)
+            guard passes else { return false }
+            // 가드에 어차피 거부될 것까지 "실행 중이라 뺌"으로 보고하지 않는다.
+            if let process = running.culprit(path: unit.path, kind: kind, home: home) {
+                skippedInUse.append(.init(name: unit.name, process: process))
+                return false
             }
-            return passesNodeModulesGuard(unit.path, guardian: guardian)
+            return true
         }
 
         // 사용자 파일은 크기를 이미 알아 바로 항목이 된다 — 기다릴 이유가 없다.
@@ -316,7 +338,8 @@ public struct ReclaimScanner: Sendable {
                           incompleteRoots: incompleteRoots,
                           measured: freshlyMeasured,
                           smallCachesSkipped: smallCaches.count,
-                          smallCachesBytes: smallCaches.reduce(0) { $0 + $1.bytes })
+                          smallCachesBytes: smallCaches.reduce(0) { $0 + $1.bytes },
+                          skippedInUse: skippedInUse)
     }
 
 

@@ -12,8 +12,9 @@ public enum ReclaimRefusal: Sendable, Equatable {
     case escapesRoot
     case homeItself
     /// 실행 중인 앱·프로세스가 쓰고 있다. 옮기면 휴지통에서 "사용 중"으로
-    /// 되돌아오고, 열린 핸들로 휴지통 안에 계속 쓴다.
-    case inUse
+    /// 되돌아오고, 열린 핸들로 휴지통 안에 계속 쓴다. 이름을 함께 담는다 —
+    /// 무엇을 꺼야 할지 알아야 사용자가 끄고 말고를 정한다.
+    case inUse(by: String)
 }
 
 /// The category of reclaimable item. Each kind maps to a fixed set of

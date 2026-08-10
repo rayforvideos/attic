@@ -25,6 +25,7 @@ struct PopoverView: View {
             unmeasuredNames: model.unmeasuredNames,
             incompleteRoots: model.incompleteRoots,
             smallCaches: model.smallCaches,
+            skippedInUse: model.skippedInUse,
             isScanningSpace: model.isScanningSpace,
             scanProgress: model.scanProgress,
             scanStartedAt: model.scanStartedAt,
@@ -94,6 +95,7 @@ struct PopoverBody: View {
     var unmeasuredNames: [String] = []
     var incompleteRoots: [String] = []
     var smallCaches: (count: Int, bytes: UInt64) = (0, 0)
+    var skippedInUse: [ScanReport.InUseSkip] = []
     let isScanningSpace: Bool
     let scanProgress: ScanProgress?
     let scanStartedAt: Date?
@@ -160,6 +162,7 @@ struct PopoverBody: View {
                             unmeasuredNames: unmeasuredNames,
                             incompleteRoots: incompleteRoots,
                             smallCaches: smallCaches,
+                            skippedInUse: skippedInUse,
                             isScanning: isScanningSpace,
                             scanProgress: scanProgress, scanStartedAt: scanStartedAt,
                             spaceScanCompletedAt: spaceScanCompletedAt,

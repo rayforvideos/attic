@@ -90,7 +90,8 @@
 "시스템 설정 → 로그인 항목에서 승인이 필요해요" = "Needs approval in System Settings → Login Items";
 "시스템 설정 열기" = "Open System Settings";
 "실행 중" = "Running";
-"실행 중인 앱이 쓰고 있어요 · 끄면 정리할 수 있어요" = "a running app is using it · quit the app to clean it up";
+"%@이(가) 쓰고 있어요 · 끄면 정리할 수 있어요" = "%@ is using it · quit it to clean it up";
+"쓰는 중이라 뺌: %@ — 끄고 다시 찾아보면 나와요" = "Skipped, currently in use: %@ — quit and rescan to see them";
 "심볼릭 링크로 바뀌어 있어요" = "it's been replaced by a symlink";
 "안 쓰는 node_modules" = "Unused node_modules";
 "안전 검증에서 걸렸어요" = "it failed a safety check";
