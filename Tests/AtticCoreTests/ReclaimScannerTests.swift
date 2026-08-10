@@ -327,6 +327,10 @@ struct ReclaimerRemeasureTests {
 
 @Suite("Electron 캐시 탐색", .serialized)
 struct ElectronCacheScanTests {
+    /// 실제 앱 이름(Slack·Notion·Figma)으로 캐시를 꾸미는 테스트다 — 실행 중
+    /// 판정을 주입하지 않으면 이 맥에서 그 앱이 떠 있을 때 후보에서 빠져
+    /// 테스트가 환경을 탄다(실측: Slack 실행 중에 실패).
+    private let idle = ReclaimInUse(appNames: [], bundleIDs: [], cwds: [], execPaths: [])
     /// 앱 이름을 미리 알 수 없으므로 구조로 찾는다: Application Support 아래
     /// 각 앱 폴더에서 Chromium 캐시 이름을 가진 폴더만 골라낸다.
     @Test func findsCachesAtEveryObservedDepth() async throws {
@@ -352,7 +356,7 @@ struct ElectronCacheScanTests {
 
         let report = await ReclaimScanner(home: home.path, projectRoots: [],
                                          staleThresholdDays: 90,
-                                         smallCacheThreshold: 0).scan()
+                                         smallCacheThreshold: 0, inUse: idle).scan()
         let paths = report.items.map(\.path)
         #expect(paths.contains { $0.hasSuffix("Slack/Cache") })
         #expect(paths.contains { $0.hasSuffix("Notion/Partitions/notion/Service Worker") })
@@ -376,7 +380,7 @@ struct ElectronCacheScanTests {
 
         let report = await ReclaimScanner(home: home.path, projectRoots: [],
                                          staleThresholdDays: 90,
-                                         smallCacheThreshold: 0).scan()
+                                         smallCacheThreshold: 0, inUse: idle).scan()
         let item = try #require(report.items.first { $0.path.hasSuffix("Slack/Code Cache") })
         #expect(item.displayName.contains("Slack"))
         #expect(item.kind == .electronCache)

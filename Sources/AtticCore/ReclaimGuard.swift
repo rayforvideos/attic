@@ -11,6 +11,9 @@ public enum ReclaimRefusal: Sendable, Equatable {
     case symlink
     case escapesRoot
     case homeItself
+    /// 실행 중인 앱·프로세스가 쓰고 있다. 옮기면 휴지통에서 "사용 중"으로
+    /// 되돌아오고, 열린 핸들로 휴지통 안에 계속 쓴다.
+    case inUse
 }
 
 /// The category of reclaimable item. Each kind maps to a fixed set of

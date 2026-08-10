@@ -107,13 +107,17 @@ public struct ReclaimScanner: Sendable {
     /// 시간의 거의 전부가 측정이고(실측 75초 중 탐색은 0.77초), 우리가 제안하는
     /// node_modules는 90일 넘게 손대지 않은 것이라 변할 일이 없다.
     private let sizeCache: SizeCache
+    /// 실행 중 판정의 주입 자리 — nil이면 스캔 시점의 실제 프로세스 목록을 쓴다.
+    private let inUse: ReclaimInUse?
 
     public init(home: String, projectRoots: [String], staleThresholdDays: Int,
                 lowPriority: Bool = false, extraProtected: [String] = [],
                 smallCacheThreshold: UInt64 = ReclaimScanner.defaultSmallCacheThreshold,
                 largeFileThreshold: UInt64 = ReclaimScanner.defaultLargeFileThreshold,
                 includeUserFiles: Bool = true,
-                sizeCache: SizeCache = SizeCache()) {
+                sizeCache: SizeCache = SizeCache(),
+                inUse: ReclaimInUse? = nil) {
+        self.inUse = inUse
         self.sizeCache = sizeCache
         self.smallCacheThreshold = smallCacheThreshold
         self.largeFileThreshold = largeFileThreshold
@@ -192,7 +196,12 @@ public struct ReclaimScanner: Sendable {
         // 낭비이고, node_modules는 파일 수가 많아 du가 압도적으로 느리다
         // (실측: 84개 du 92초 vs 캐시 85개 23초).
         onProgress?(ScanProgress(done: 0, total: 0, current: L("훑는 중")))
+        // 실행 중인 앱의 캐시·살아 있는 프로세스가 물고 있는 node_modules는
+        // 후보에서 뺀다. 옮겨봐야 휴지통에서 "사용 중"으로 되돌아온다.
+        let running = inUse ?? ReclaimInUse(samples: ProcessSampler().sample())
         let admitted = work.filter { unit in
+            let kind = unit.kind ?? .nodeModules
+            if running.isInUse(path: unit.path, kind: kind, home: home) { return false }
             if let kind = unit.kind {
                 return passesGuard(unit.path, kind: kind, guardian: guardian)
             }

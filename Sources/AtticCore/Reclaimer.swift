@@ -49,8 +49,12 @@ public struct Reclaimer: Sendable {
     public func moveToTrash(
         _ items: [ReclaimItem],
         guard guardian: ReclaimGuard,
-        staleThresholdDays: Int
+        staleThresholdDays: Int,
+        inUse: ReclaimInUse? = nil
     ) async -> ReclaimResult {
+        // 스캔 때 걸렀어도 그 사이 앱이 켜졌을 수 있다 — 이동 시점의 프로세스
+        // 목록으로 다시 판정한다. 주입(inUse)은 테스트를 위한 것이다.
+        let running = inUse ?? ReclaimInUse(samples: ProcessSampler().sample())
         var movedBytes: UInt64 = 0
         var movedCount = 0
         var refused: [(path: String, reason: ReclaimRefusal)] = []
@@ -61,6 +65,11 @@ public struct Reclaimer: Sendable {
 
         for item in items {
             let fm = FileManager.default
+
+            if running.isInUse(path: item.path, kind: item.kind, home: guardian.home) {
+                refused.append((item.path, .inUse))
+                continue
+            }
 
             // 폴더만 받던 시절의 검사가 남아 있었다. 그 뒤로 스크린샷·다운로드
             // 파일·큰 파일처럼 **파일 하나**인 항목이 생겼는데, 그것들이 전부

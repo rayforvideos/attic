@@ -697,6 +697,7 @@ final class DiagnosticsModel {
     private func refusalText(_ reason: ReclaimRefusal) -> String {
         switch reason {
         case .outsideAllowedRoots: L("허용된 경로 밖이에요")
+        case .inUse: L("실행 중인 앱이 쓰고 있어요 · 끄면 정리할 수 있어요")
         case .symlink: L("심볼릭 링크로 바뀌어 있어요")
         case .tooRecent: L("최근에 쓴 프로젝트예요")
         case .missingLockfile: L("잠금 파일이 없는 프로젝트예요")
