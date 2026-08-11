@@ -101,6 +101,12 @@ struct SpacePane: View {
                         Button("다시 찾아보기", action: onScan)
                             .buttonStyle(.bordered).controlSize(.small)
                     }
+                    // 마지막 항목까지 옮기면 결과 카드가 통째로 사라져, 정작
+                    // "비우면 공간이 확보돼요"라고 말해 놓고 누를 버튼이 없었다
+                    // (감사에서 확인) — 정리의 마지막 걸음은 목록이 비어도 남긴다.
+                    if offersTrashWhenEmpty {
+                        Card(tint: Palette.apps) { trashLine }
+                    }
                 } else {
                     summaryCard
                     resultList
@@ -327,7 +333,12 @@ struct SpacePane: View {
             }
             // 버튼을 여기 두면 아래 [캐시 모두 선택]과 파란 링크 두 개가 2pt
             // 간격으로 겹쳐 보인다 — 문장만 남기고 버튼은 액션 줄로 내렸다.
-            if spaceResultsFromDisk, let spaceScanCompletedAt {
+            // 디스크에서 불러온 결과뿐 아니라 이번 실행에서 훑은 결과도 한 시간이
+            // 지나면 나이를 보여준다 — 메뉴바에 상주하는 앱이라 "이번 실행"이
+            // 며칠씩 이어질 수 있다. 방금 훑은 결과에는 붙이지 않는다("0분 전"은
+            // 소음이다).
+            if let spaceScanCompletedAt,
+               spaceResultsFromDisk || Date().timeIntervalSince(spaceScanCompletedAt) >= 3600 {
                 ageSubtitle(since: spaceScanCompletedAt)
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                     .padding(.top, 1)
@@ -365,16 +376,20 @@ struct SpacePane: View {
                 if isMoving {
                     ProgressView().controlSize(.small).scaleEffect(0.6)
                 }
-                // 오래된 결과를 보고 있을 때만. 방금 훑었으면 누를 이유가 없다.
-                if spaceResultsFromDisk {
-                    Button("다시 찾아보기", action: onScan)
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(isMoving)
-                }
+                // 항상 보여준다. 예전에는 디스크에서 불러온 결과에만 보여줬는데
+                // ("방금 훑었으면 누를 이유가 없다"), 메뉴바 상주 앱이라 스캔 후
+                // 며칠이 지나도 "이번 실행"이다 — 한 번 스캔하면 재시작 전까지
+                // 다시 훑을 길이 없었다(사용자 신고).
+                Button("다시 찾아보기", action: onScan)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(isMoving)
                 Spacer(minLength: 0)
             }
             .padding(.top, 8)
+            if let trash, trash.shouldOfferEmptying(justMoved: hasMovedToTrash) {
+                Divider().padding(.vertical, 2)
+            }
             trashLine
         }
     }
@@ -433,11 +448,18 @@ struct SpacePane: View {
         .background(Palette.over.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
     }
 
+    /// 목록이 빈 화면에서도 휴지통 카드를 보여줄지. 크기를 못 읽는 상태(trash가
+    /// nil)라도 방금 옮겼다면 비워야 공간이 는다는 안내는 보여준다.
+    private var offersTrashWhenEmpty: Bool {
+        guard let trash else { return hasMovedToTrash }
+        return trash.shouldOfferEmptying(justMoved: hasMovedToTrash)
+    }
+
     /// 정리의 마지막 한 걸음. 여기까지 오지 않으면 「여유」는 1바이트도 늘지 않는다.
+    /// summaryCard와 빈 화면 양쪽에서 쓴다 — 구분선은 summaryCard 쪽에서만 붙인다.
     @ViewBuilder
     private var trashLine: some View {
         if let trash, trash.shouldOfferEmptying(justMoved: hasMovedToTrash) {
-            Divider().padding(.vertical, 2)
             if confirmingEmpty {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(L("%@를 완전히 지워요 · 되돌릴 수 없어요",
