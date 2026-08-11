@@ -52,6 +52,42 @@ for path in glob.glob('Resources/*.lproj/Localizable.strings'):
                   f"\n  키: {key}\n  값: {value}")
             fail += 1
 
+# stringsdict도 같은 이유로 검사한다. 각 변형(one/other)을 포맷 문자열에
+# 끼워 넣은 결과의 자리표시자가 키와 어긋나면 런타임에 똑같이 죽는다.
+for path in glob.glob('Resources/*.lproj/Localizable.stringsdict'):
+    with open(path, 'rb') as f:
+        table = plistlib.load(f)
+    for key, entry in table.items():
+        fmt = entry.get('NSStringLocalizedFormatKey', '')
+        variables = {name: cfg for name, cfg in entry.items()
+                     if isinstance(cfg, dict)}
+        names = re.findall(r'%#@(\w+)@', fmt)
+        if set(names) != set(variables):
+            print(f"FAIL {path}: 포맷의 변수와 정의가 다름\n  키: {key}")
+            fail += 1
+            continue
+        # 변수 하나씩 각 변형으로 바꿔보고, 나머지는 other로 채운다
+        for name, cfg in variables.items():
+            variants = {k: v for k, v in cfg.items()
+                        if k not in ('NSStringFormatSpecTypeKey',
+                                     'NSStringFormatValueTypeKey')}
+            for label, variant in variants.items():
+                resolved = fmt
+                for other in names:
+                    text = variant if other == name else variables[other]['other']
+                    resolved = resolved.replace(f'%#@{other}@', text)
+                ks, rs = specs(key), specs(resolved)
+                # .strings 검사와 같은 규칙: 위치 지정(%1$@)을 쓰면 순서가
+                # 달라도 되고, 타입 집합만 같으면 된다
+                if any(i for i, _ in rs):
+                    mismatch = sorted(t for _, t in ks) != sorted(t for _, t in rs)
+                else:
+                    mismatch = [t for _, t in ks] != [t for _, t in rs]
+                if mismatch:
+                    print(f"FAIL {path}: 자리표시자가 키와 다름 ({name}.{label})"
+                          f"\n  키: {key}\n  값: {resolved}")
+                    fail += 1
+
 # en 테이블 기준으로 누락을 검사한다
 en = subprocess.run(['plutil', '-convert', 'xml1', '-o', '-',
                      'Resources/en.lproj/Localizable.strings'], capture_output=True)
