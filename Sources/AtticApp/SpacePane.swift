@@ -106,14 +106,13 @@ struct SpacePane: View {
                     resultList
                 }
                 if !incompleteRoots.isEmpty {
-                    HStack(spacing: 5) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10)).foregroundStyle(Palette.over)
-                        Text(L("끝까지 훑지 못한 폴더: %@ — 권한을 확인해주세요",
-                               incompleteRoots.joined(separator: ", ")))
-                            .font(.system(size: 10.5)).foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
+                    NoticeDisclosure(
+                        symbol: "exclamationmark.triangle.fill", tint: Palette.over,
+                        title: incompleteRoots.count == 1
+                            ? L("끝까지 훑지 못한 폴더: %@", incompleteRoots[0])
+                            : L("끝까지 훑지 못한 폴더 %lld개", incompleteRoots.count),
+                        items: incompleteRoots,
+                        hint: L("권한을 확인해주세요"))
                 }
                 if smallCaches.count > 0 {
                     Text(L("자잘한 앱 캐시 %lld개(%@)는 목록에서 생략했어요",
@@ -127,19 +126,21 @@ struct SpacePane: View {
                         skip.name.localizedCaseInsensitiveContains(skip.process)
                             ? skip.name : "\(skip.name) (\(skip.process))"
                     }
-                    Text(L("쓰는 중이라 뺌: %@ — 끄고 다시 찾아보면 나와요",
-                           entries.joined(separator: ", ")))
-                        .font(.system(size: 10)).foregroundStyle(.tertiary)
-                        .lineLimit(2)
+                    NoticeDisclosure(
+                        symbol: "circle.dashed",
+                        title: entries.count == 1
+                            ? L("사용 중이라 제외한 항목: %@", entries[0])
+                            : L("사용 중이라 제외한 항목 %lld개", entries.count),
+                        items: entries,
+                        hint: L("쓰고 있는 앱을 끄고 다시 찾아보면 나와요"))
                 }
                 if !unmeasuredNames.isEmpty {
-                    HStack(spacing: 5) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10)).foregroundStyle(Palette.over)
-                        Text(L("크기를 재지 못해 빠짐: %@", unmeasuredNames.joined(separator: ", ")))
-                            .font(.system(size: 10.5)).foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
+                    NoticeDisclosure(
+                        symbol: "exclamationmark.triangle.fill", tint: Palette.over,
+                        title: unmeasuredNames.count == 1
+                            ? L("크기를 재지 못해 빠짐: %@", unmeasuredNames[0])
+                            : L("크기를 재지 못해 빠진 항목 %lld개", unmeasuredNames.count),
+                        items: unmeasuredNames)
                 }
             }
             if let note {
@@ -623,4 +624,77 @@ struct SpacePane: View {
         }
     }
 
+}
+
+/// 결과 아래에 붙는 안내줄. 항목이 하나면 제목에 넣어 그대로 보여주고, 여러 개면
+/// 개수만 접어 두었다가 누르면 한 줄씩 펼친다 — 쉼표로 이어 붙이면 잘려서 전부
+/// 볼 수 없다(사용자 신고).
+private struct NoticeDisclosure: View {
+    let symbol: String
+    /// 경고성 안내(권한·측정 실패)에만 색을 준다. nil이면 흐린 회색.
+    var tint: Color? = nil
+    /// 항목이 하나면 호출부가 제목에 그 항목을 넣는다("…: Slack").
+    let title: String
+    let items: [String]
+    var hint: String? = nil
+
+    @State private var expanded = false
+
+    /// 하나뿐이면 제목이 이미 다 말하고 있으니 접을 것이 없다.
+    private var collapsible: Bool { items.count > 1 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if collapsible {
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { expanded.toggle() }
+                } label: {
+                    header.contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if expanded {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(items.indices, id: \.self) { index in
+                            Text(items[index])
+                                .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                                .lineLimit(1).truncationMode(.middle)
+                        }
+                        hintText
+                    }
+                    .padding(.leading, 18)
+                }
+            } else {
+                header
+                hintText.padding(.leading, 18)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol)
+                .font(.system(size: 10))
+                .foregroundStyle(tint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.tertiary))
+                .frame(width: 13)
+            Text(title)
+                .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                .lineLimit(2).truncationMode(.middle)
+            if collapsible {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 7.5, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(expanded ? 90 : 0))
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private var hintText: some View {
+        if let hint {
+            Text(hint)
+                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                .padding(.top, 1)
+        }
+    }
 }

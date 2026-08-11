@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- 영어 단수/복수 규칙. 여기 있는 키는 Localizable.strings의 같은 키보다
+     우선한다 — .strings 쪽 값은 check-strings.py의 누락 검사를 위해 남겨둔다.
+     한국어(키 원문)는 단복수 구분이 없어 stringsdict가 필요 없다. -->
+<dict>
+	<key>%lld개 프로세스 정리됨</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Quit %#@processes@</string>
+		<key>processes</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld process</string>
+			<key>other</key>
+			<string>%lld processes</string>
+		</dict>
+	</dict>
+	<key>%lld시간 동안 일 안 함</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>idle for %#@hours@</string>
+		<key>hours</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld hour</string>
+			<key>other</key>
+			<string>%lld hours</string>
+		</dict>
+	</dict>
+	<key>%lld시간째 켜져 있음</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>up for %#@hours@</string>
+		<key>hours</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld hour</string>
+			<key>other</key>
+			<string>%lld hours</string>
+		</dict>
+	</dict>
+	<key>%lld일</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld day</string>
+			<key>other</key>
+			<string>%lld days</string>
+		</dict>
+	</dict>
+	<key>%lld일째 켜져 있음</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>up for %#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld day</string>
+			<key>other</key>
+			<string>%lld days</string>
+		</dict>
+	</dict>
+	<key>끝까지 훑지 못한 폴더 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@folders@</string>
+		<key>folders</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld folder not fully scanned</string>
+			<key>other</key>
+			<string>%lld folders not fully scanned</string>
+		</dict>
+	</dict>
+	<key>크기를 재지 못해 빠진 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item left out because its size couldn't be measured</string>
+			<key>other</key>
+			<string>%lld items left out because their size couldn't be measured</string>
+		</dict>
+	</dict>
+	<key>같은 명령 %lld개 중복</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@copies@ of the same command</string>
+		<key>copies</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld copy</string>
+			<key>other</key>
+			<string>%lld copies</string>
+		</dict>
+	</dict>
+	<key>사용 중이라 제외한 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@ excluded while in use</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>여유 중 %@는 시스템이 필요하면 스스로 비워요 · 로컬 스냅샷 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%@ of that is space the system frees on its own when needed · %#@snapshots@</string>
+		<key>snapshots</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld local snapshot</string>
+			<key>other</key>
+			<string>%lld local snapshots</string>
+		</dict>
+	</dict>
+	<key>프로세스 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@processes@</string>
+		<key>processes</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld process</string>
+			<key>other</key>
+			<string>%lld processes</string>
+		</dict>
+	</dict>
+	<key>프로젝트 %lld일째 그대로</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>project untouched for %#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld day</string>
+			<key>other</key>
+			<string>%lld days</string>
+		</dict>
+	</dict>
+	<key>자잘한 앱 캐시 %lld개(%@)는 목록에서 생략했어요</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@caches@</string>
+		<key>caches</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld small app cache (%@) was left out of the list</string>
+			<key>other</key>
+			<string>%lld small app caches (%@) were left out of the list</string>
+		</dict>
+	</dict>
+	<key>%@ · %lld일째 그대로</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%@ · untouched for %#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld day</string>
+			<key>other</key>
+			<string>%lld days</string>
+		</dict>
+	</dict>
+	<key>휴지통을 비웠어요 · %lld개를 지웠어요%@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Trash emptied · deleted %#@items@%@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>부팅할 때 함께 올라오는 프로그램 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@programs@</string>
+		<key>programs</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld program starts with your Mac</string>
+			<key>other</key>
+			<string>%lld programs start with your Mac</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

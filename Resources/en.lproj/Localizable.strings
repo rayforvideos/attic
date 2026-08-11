@@ -56,7 +56,9 @@
 "꺼짐" = "Off";
 "끄기" = "Off";
 "끄면 다시 로그인해도 자동 실행되지 않아요 · 언제든 다시 켤 수 있어요" = "Turning it off keeps it from launching at login · you can turn it back on anytime";
-"끝까지 훑지 못한 폴더: %@ — 권한을 확인해주세요" = "Folders not fully scanned: %@ — check permissions";
+"끝까지 훑지 못한 폴더: %@" = "Not fully scanned: %@";
+"끝까지 훑지 못한 폴더 %lld개" = "%lld folders not fully scanned";
+"권한을 확인해주세요" = "Check permissions";
 "다시 찾아보기" = "Look again";
 "다음 빌드 때 다시 만들어져요" = "Rebuilt on your next build";
 "다음 실행 때 다시 만들어져요" = "Recreated the next time the app runs";
@@ -91,7 +93,9 @@
 "시스템 설정 열기" = "Open System Settings";
 "실행 중" = "Running";
 "%@이(가) 쓰고 있어요 · 끄면 정리할 수 있어요" = "%@ is using it · quit it to clean it up";
-"쓰는 중이라 뺌: %@ — 끄고 다시 찾아보면 나와요" = "Skipped, currently in use: %@ — quit and rescan to see them";
+"사용 중이라 제외한 항목: %@" = "Excluded while in use: %@";
+"사용 중이라 제외한 항목 %lld개" = "%lld items excluded while in use";
+"쓰고 있는 앱을 끄고 다시 찾아보면 나와요" = "Quit those apps and rescan to see them";
 "심볼릭 링크로 바뀌어 있어요" = "it's been replaced by a symlink";
 "안 쓰는 node_modules" = "Unused node_modules";
 "안전 검증에서 걸렸어요" = "it failed a safety check";
@@ -121,7 +125,8 @@
 "최근 문제를 진단할 로그도 함께 사라져요 — 확인하고 비우세요" = "Logs you'd need to diagnose recent problems go too — check before freeing";
 "최근에 쓴 프로젝트예요" = "the project was used recently";
 "켜기" = "On";
-"크기를 재지 못해 빠짐: %@" = "Left out because their size couldn't be measured: %@";
+"크기를 재지 못해 빠짐: %@" = "Left out because its size couldn't be measured: %@";
+"크기를 재지 못해 빠진 항목 %lld개" = "%lld items left out because their size couldn't be measured";
 "테스트 알림 보내기" = "Send a test notification";
 "패키지 캐시" = "Package caches";
 "패키지를 설치하면 다시 만들어져요" = "Recreated when you install packages";
