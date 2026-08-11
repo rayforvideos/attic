@@ -270,10 +270,25 @@
     transition: opacity .6s cubic-bezier(.2,.7,.3,1), transform .6s cubic-bezier(.2,.7,.3,1);
   }
   html.anim .reveal.in { opacity: 1; transform: none; }
+  /* flow 3단계는 부모가 떠오른 뒤 자식이 왼쪽부터 차례로 올라온다 */
+  html.anim .flow .step {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity .55s cubic-bezier(.2,.7,.3,1), transform .55s cubic-bezier(.2,.7,.3,1);
+  }
+  html.anim .flow.in .step { opacity: 1; transform: none; }
+  html.anim .flow.in .step:nth-child(2) { transition-delay: .1s; }
+  html.anim .flow.in .step:nth-child(3) { transition-delay: .2s; }
+  /* 스크린샷은 살짝 눕힌 채 내려와 자리를 잡는다 */
+  html.anim .shot-frame.reveal {
+    transform: perspective(1000px) translateY(30px) rotateX(7deg) scale(.965);
+    transition: opacity .9s cubic-bezier(.2,.7,.3,1), transform .9s cubic-bezier(.2,.7,.3,1);
+  }
+  html.anim .shot-frame.reveal.in { transform: none; }
   @media (prefers-reduced-motion: reduce) {
     .card, .btn { transition: none !important; }
     .hero-glow i, h1 .grad { animation: none !important; }
     html.anim .reveal { opacity: 1; transform: none; transition: none; }
+    html.anim .flow .step { opacity: 1; transform: none; transition: none; }
     html { scroll-behavior: auto; }
   }
 
