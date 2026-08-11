@@ -137,7 +137,9 @@
   html.no-download [data-download] { display: none; }
   .not-mac {
     border: 1px solid var(--line); background: var(--surface); border-radius: 11px;
-    padding: 13px 20px; font-size: 14.5px; color: var(--dim); margin: 0 auto; max-width: 380px;
+    padding: 13px 20px; font-size: 14.5px; color: var(--dim); max-width: 380px;
+    /* 폰에서만 보이는 상자라 맥에서는 안 보였다: 위 여백이 없어 [소스 보기]에 붙었다(사용자 신고) */
+    margin: 14px auto 0;
   }
 
   .shot-frame { position: relative; margin: 58px auto 0; width: min(420px, 100%); }
