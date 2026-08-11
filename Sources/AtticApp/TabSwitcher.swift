@@ -2,10 +2,8 @@ import SwiftUI
 
 /// 탭 전환 컨트롤.
 ///
-/// 네이티브 `Picker(.segmented)`는 AppKit의 NSSegmentedControl을 감싸는데, 팝오버 안에서
-/// 실측했을 때 선택된 칸만 그려지고 나머지 칸이 나타나지 않았다. 화면의 주 조작 수단을
-/// 확인할 수 없는 컨트롤에 맡길 수 없어 순수 SwiftUI로 직접 만든다 — 배지 표시도
-/// 이쪽이 자유롭다.
+/// `Picker(.segmented)`는 팝오버 안에서 선택된 칸만 그려지고 나머지가 나타나지
+/// 않아 순수 SwiftUI로 직접 만든다.
 struct TabSwitcher<Tab: Hashable>: View {
     let tabs: [(tab: Tab, title: LocalizedStringKey, badge: String?)]
     @Binding var selection: Tab

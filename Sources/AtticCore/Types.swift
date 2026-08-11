@@ -1,6 +1,7 @@
 import Foundation
 
-/// (pid, 시작시각) 쌍 — 부팅 세션 내 프로세스 유일 식별자. pid 재사용 방어의 근간.
+/// (pid, 시작시각) 쌍. 부팅 세션 안에서 프로세스를 유일하게 가리키며 pid 재사용
+/// 방어의 근간이다.
 public struct ProcIdentity: Sendable, Equatable, Hashable {
     public let pid: pid_t
     public let startSec: UInt64
@@ -10,7 +11,7 @@ public struct ProcIdentity: Sendable, Equatable, Hashable {
     }
 }
 
-/// 한 프로세스의 스캔 시점 스냅샷. 시스템 접근 없이 판단 로직에 주입 가능.
+/// 한 프로세스의 스캔 시점 스냅샷. 시스템 접근 없이 판단 로직에 주입할 수 있다.
 public struct ProcessSample: Sendable, Equatable {
     public let pid: pid_t
     public let ppid: pid_t
@@ -40,8 +41,8 @@ public struct ProcessSample: Sendable, Equatable {
     }
 }
 
-/// ppid 체인 전체(전 uid) 추적용 최소 조상 정보. proc_bsdshortinfo/proc_pidpath는
-/// NO_CHECK_SAME_USER이므로 root 소유 조상(예: /usr/bin/login)도 커버한다.
+/// ppid 체인을 끝까지 따라가는 데 필요한 최소 조상 정보. proc_bsdshortinfo와
+/// proc_pidpath는 NO_CHECK_SAME_USER라 root 소유 조상까지 덮는다.
 public struct AncestorInfo: Sendable, Equatable {
     public let ppid: pid_t
     public let execPath: String

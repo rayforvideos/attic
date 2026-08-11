@@ -2,9 +2,9 @@ import Foundation
 import Observation
 @preconcurrency import UserNotifications
 
-/// 알림 전달자. 애드혹 서명 빌드는 권한 요청이 프롬프트 없이 즉시 거부되고
-/// (실측 2026-08-05), 안정 서명이라도 사용자가 알림을 꺼 둘 수 있다 —
-/// 어느 쪽이든 fallbackActive를 세워 UI가 메뉴바 아이콘 강조로 대체하게 한다.
+/// 알림 전달자. 애드혹 서명 빌드는 권한 요청이 프롬프트 없이 즉시 거부되고, 안정
+/// 서명이라도 사용자가 알림을 꺼 둘 수 있다. 어느 쪽이든 fallbackActive를 세워 UI가
+/// 메뉴바 아이콘 강조로 대체하게 한다.
 @MainActor
 @Observable
 public final class Notifier {
@@ -35,8 +35,8 @@ public final class Notifier {
     }
 
     public func notify(title: String, body: String) async {
-        // 거부 상태를 캐시하지 않는다 — 사용자가 시스템 설정에서 나중에 켜면
-        // 다음 알림부터 배너로 복귀해야 한다. 허용 상태만 캐시한다(요청 비용 절약).
+        // 거부 상태는 캐시하지 않는다. 사용자가 나중에 시스템 설정에서 켜면 다음
+        // 알림부터 배너로 복귀해야 한다.
         if authorized != true { authorized = await requestAuth() }
         if authorized == true {
             fallbackActive = false

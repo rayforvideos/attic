@@ -1,16 +1,12 @@
 #!/bin/bash
-# Scripts/release.sh — 웹에서 배포할 DMG를 만든다: Developer ID 서명 → 공증 →
-# 티켓 첨부 → Gatekeeper 검증.
+# Scripts/release.sh — 웹에서 배포할 DMG를 만든다. Developer ID 서명, 공증,
+# 티켓 첨부, Gatekeeper 검증 순서로 진행한다.
 #
-# 왜 필요한가: 개발용 서명(Apple Development)으로 만든 앱은 남의 맥에서 열리지
-# 않는다. 실측으로 확인했다 — quarantine을 붙여 `spctl`에 물어보면 `rejected`다.
-# macOS 15부터는 우클릭 → 열기 우회도 없어서, 받는 사람이 시스템 설정까지
-# 들어가 「그대로 열기」를 눌러야 한다. 디스크를 정리하고 전체 디스크 접근을
-# 요구하는 앱에게 그 과정을 거쳐줄 사람은 없다.
+# 개발용 서명(Apple Development)으로 만든 앱은 남의 맥에서 열리지 않는다.
+# quarantine이 붙으면 Gatekeeper가 거부하고, macOS 15부터는 우클릭 우회도 없다.
 #
-# 앱스토어는 이 앱에 닫혀 있다: 샌드박스가 필수인데 이 앱의 핵심 기능(남의 앱
-# 캐시 삭제, launchctl, 프로세스 종료, 휴지통 비우기)이 전부 샌드박스 금지
-# 항목이다. CleanMyMac·OnyX도 같은 이유로 웹 배포만 한다.
+# 앱스토어는 이 앱에 닫혀 있다. 핵심 기능(남의 앱 캐시 삭제, launchctl, 프로세스
+# 종료, 휴지통 비우기)이 전부 샌드박스 금지 항목이다.
 #
 # 사용법:
 #   Scripts/release.sh              전체 배포본 만들기(인증서·공증 자격 필요)
@@ -31,9 +27,8 @@ NOTARY_PROFILE=${NOTARY_PROFILE:-attic-notary}
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
 APP=build/Attic.app
-# 이름에 버전을 넣는다. 받아둔 파일이 어느 버전인지 파일명만 보고 알 수 있어야
-# 한다. 웹사이트는 최신 릴리스를 API로 물어 .dmg 자산 주소를 찾으므로,
-# 고정 이름이 아니어도 다운로드 버튼은 그대로 동작한다.
+# 이름에 버전을 넣어도 웹사이트는 최신 릴리스를 API로 물어 .dmg 주소를 찾으므로
+# 다운로드 버튼은 그대로 동작한다.
 DMG="build/Attic-$VERSION.dmg"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
@@ -42,12 +37,13 @@ die() { printf '\033[31m실패: %s\033[0m\n' "$1" >&2; exit 1; }
 # ---------------------------------------------------------------- 1. 사전 확인
 say "1/6 사전 확인"
 
-# 배포 서명은 Developer ID Application이어야 한다. Apple Development(개발용)로
-# 서명하면 공증 자체가 거부된다 — 여기서 막지 않으면 몇 분 기다린 뒤에 안다.
-# Developer ID 인증서가 여러 개면 **고르지 않는다**. 이 맥에는 회사 팀
-# (UN7QI3 Inc.) 인증서가 있었던 이력이 있어, 자동으로 첫 번째를 집으면 개인
-# 프로젝트가 회사 명의로 서명돼 나갈 수 있다 — 배포 후에는 되돌릴 수 없다.
-# macOS는 bash 3.2라 mapfile이 없다 — while read로 읽는다.
+# 배포 서명은 Developer ID Application이어야 한다. 개발용으로 서명하면 공증이
+# 거부되는데, 여기서 막지 않으면 몇 분 기다린 뒤에야 안다.
+#
+# 인증서가 여러 개면 고르지 않는다. 자동으로 첫 번째를 집으면 개인 프로젝트가
+# 회사 명의로 서명돼 나갈 수 있고, 배포 후에는 되돌릴 수 없다.
+#
+# macOS 기본 bash 3.2에는 mapfile이 없어 while read로 읽는다.
 CANDIDATES=()
 while IFS= read -r line; do
     [[ -n "$line" ]] && CANDIDATES+=("$line")
@@ -78,8 +74,8 @@ else
     echo "  서명 인증서: $IDENTITY"
 fi
 
-# 팀 ID는 인증서 이름 끝의 괄호에 들어 있다. 손으로 찾아 적게 하면 회사 팀과
-# 개인 팀을 헷갈린다(실제로 헷갈렸다) — 읽어서 그대로 보여준다.
+# 팀 ID는 인증서 이름 끝 괄호에 들어 있다. 손으로 적게 하면 회사 팀과 개인 팀을
+# 헷갈리므로 읽어서 보여준다.
 TEAM_ID=$(sed -n 's/.*(\([A-Z0-9]\{10\}\))$/\1/p' <<<"$IDENTITY")
 if ! $DRY_RUN; then
     xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
@@ -95,14 +91,14 @@ echo "  버전: $VERSION ($BUILD)"
 
 # ---------------------------------------------------------------- 2. 빌드·서명
 say "2/6 빌드하고 배포용으로 서명"
-# 빌드 로그는 실패했을 때만 보여준다 — 성공 로그가 단계 출력에 섞이면 읽기 어렵다.
+# 빌드 로그는 실패했을 때만 보여준다.
 build_log=$(SIGN_IDENTITY="$IDENTITY" Scripts/make-app.sh 2>&1) \
     || { echo "$build_log" >&2; die "빌드·서명 실패"; }
 echo "  $APP"
 
 # ------------------------------------------------------------ 3. 서명 검증
-# 공증은 이 세 가지가 모두 갖춰져야 통과한다. 제출 후 거부되면 원인을 로그에서
-# 파헤쳐야 하니 여기서 먼저 확인한다.
+# 공증은 hardened runtime, 보안 타임스탬프, Developer ID 서명이 모두 있어야 통과한다.
+# 제출 후 거부되면 원인을 로그에서 파헤쳐야 하니 먼저 확인한다.
 say "3/6 서명 검증"
 info=$(codesign -dvvv "$APP" 2>&1)
 grep -q "flags=.*runtime" <<<"$info" || die "hardened runtime이 빠졌습니다"
@@ -118,27 +114,25 @@ echo "  hardened runtime ✓  타임스탬프 ✓  서명 유효 ✓"
 say "4/6 DMG 만들기"
 STAGE=build/dmg-stage
 RW_DMG=build/attic-rw.dmg
-# Finder에게 창을 꾸미게 하려면 /Volumes에 정상 마운트해야 한다. 프로젝트 폴더
-# 안에 -mountpoint로 붙이면 Finder가 "disk"로 인식하지 못한다(실측: -1728).
+# Finder에게 창을 꾸미게 하려면 /Volumes에 정상 마운트해야 한다. -mountpoint로
+# 다른 곳에 붙이면 Finder가 disk로 인식하지 못한다.
 MOUNT="/Volumes/Attic $VERSION"
 rm -rf "$STAGE" "$DMG" "$RW_DMG"
 hdiutil detach "$MOUNT" -force >/dev/null 2>&1 || true
 mkdir -p "$STAGE/.background"
 cp -R "$APP" "$STAGE/"
-# 받는 사람이 끌어다 놓을 대상. 안내 없이도 무엇을 하면 되는지 보인다.
+# 받는 사람이 끌어다 놓을 대상.
 ln -s /Applications "$STAGE/Applications"
 cp Resources/dmg/background.png "$STAGE/.background/background.png"
 cp Resources/dmg/background@2x.png "$STAGE/.background/background@2x.png"
 
-# 창 꾸미기는 읽기·쓰기 이미지에서만 된다(.DS_Store를 써야 한다) — 꾸민 뒤
-# 압축본으로 변환한다. 출력을 버리지 않는다: 실패한 파일이 다음 단계로 넘어가면
-# 공증이 오류 없이 멈춘다(실제로 30분 날렸다).
+# 창 꾸미기는 .DS_Store를 써야 해서 읽기·쓰기 이미지에서만 된다. 꾸민 뒤 압축본으로
+# 변환한다. 실패를 여기서 잡지 않으면 깨진 파일이 넘어가 공증이 오류 없이 멈춘다.
 hdiutil create -volname "Attic $VERSION" -srcfolder "$STAGE" -ov \
     -format UDRW -fs HFS+ "$RW_DMG" >/dev/null || die "임시 DMG를 만들지 못했습니다"
 hdiutil attach "$RW_DMG" >/dev/null || die "임시 DMG를 마운트하지 못했습니다"
 
-# Finder에게 창 모양을 시킨다. 실패해도 배포는 계속한다 — 꾸밈이 없다고
-# 설치가 안 되는 것은 아니다(자동화 권한이 없는 기계에서도 배포되어야 한다).
+# 실패해도 배포는 계속한다. 자동화 권한이 없는 기계에서도 배포는 되어야 한다.
 osascript >/dev/null 2>&1 <<APPLESCRIPT || echo "  ⚠︎ 창 꾸미기를 건너뜁니다(Finder 자동화 권한 없음)"
 tell application "Finder"
     tell disk "Attic $VERSION"
@@ -166,9 +160,9 @@ rm -rf "$STAGE"
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null \
     || die "DMG를 압축하지 못했습니다"
 rm -f "$RW_DMG"
-# 만든 DMG가 실제로 열리는지 확인한다. 이 검사가 없어서 깨진 파일이 통과했다.
+# 만든 DMG가 실제로 열리는지 확인한다.
 hdiutil verify "$DMG" >/dev/null 2>&1 || die "만든 DMG가 깨졌습니다 (hdiutil verify 실패)"
-# DMG 자체도 서명한다 — 공증은 서명된 컨테이너를 요구한다.
+# 공증은 서명된 컨테이너를 요구하므로 DMG 자체도 서명한다.
 codesign --force --sign "$IDENTITY" --timestamp "$DMG"
 echo "  $DMG ($(du -h "$DMG" | cut -f1))"
 
@@ -177,11 +171,11 @@ if $DRY_RUN; then
     say "5/6 공증 — 건너뜀(--dry-run)"
 else
     say "5/6 공증 제출(보통 몇 분)"
-    # 공증은 심사가 아니라 자동 악성코드 검사다 — 기능을 이유로 거절되지 않는다.
+    # 공증은 심사가 아니라 자동 악성코드 검사라 기능을 이유로 거절되지 않는다.
     xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait \
         || die "공증이 거부되었습니다. 자세한 이유:
     xcrun notarytool log <submission-id> --keychain-profile $NOTARY_PROFILE"
-    # 티켓을 파일에 박아둔다 — 이게 없으면 받는 사람이 오프라인일 때 막힌다.
+    # 티켓을 파일에 박아둔다. 없으면 받는 사람이 오프라인일 때 막힌다.
     xcrun stapler staple "$DMG"
     echo "  공증 완료, 티켓 첨부됨"
 fi
@@ -192,8 +186,8 @@ if $DRY_RUN; then
     echo "  건너뜀 — 공증하지 않은 DMG는 반드시 거부됩니다(그게 정상입니다)"
 else
     xcrun stapler validate "$DMG" >/dev/null || die "티켓이 첨부되지 않았습니다"
-    # Gatekeeper에게 실제로 물어본다. 여기서 accepted가 나와야 남의 맥에서
-    # 경고 없이 열린다 — 내 맥에서 열리는 것과는 다른 질문이다.
+    # 여기서 accepted가 나와야 남의 맥에서 경고 없이 열린다. 내 맥에서 열리는 것과는
+    # 다른 질문이다.
     verdict=$(spctl -a -vvv -t open --context context:primary-signature "$DMG" 2>&1 || true)
     grep -q "accepted" <<<"$verdict" || die "Gatekeeper가 거부했습니다:
 $verdict"

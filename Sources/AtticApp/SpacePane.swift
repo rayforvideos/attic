@@ -1,29 +1,26 @@
 import SwiftUI
 import AtticCore
 
-/// 공간 탭 — 캐시·오래된 node_modules를 찾아 **선택한 것만 휴지통으로** 옮긴다.
-/// "회수"라는 말은 쓰지 않는다("비우다" 어휘만 쓴다). 선택 상태는 이 화면이 직접 들고
-/// 있는다(모델은 스캔 결과와 진행 상태만 안다).
+/// 공간 탭. 캐시·오래된 node_modules를 찾아 선택한 것만 휴지통으로 옮긴다.
+/// 선택 상태는 이 화면이 들고 있고, 모델은 스캔 결과와 진행 상태만 안다.
 struct SpacePane: View {
-    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
-    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
-    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    /// L()로 만든 문자열은 locale을 읽지 않는다. SwiftUI는 환경값을 읽는 뷰만 다시
+    /// 그리므로, 이 선언이 없으면 언어를 바꿔도 L()로 조립한 문장이 옛 언어로 남는다.
     @Environment(\.locale) private var locale
 
-    /// 한 번이라도 훑어봤는지. 모델이 기억한다 — 뷰 로컬 상태로 두면 탭을 옮겼다
-    /// 돌아올 때 결과가 있는데도 시작 화면이 뜬다(실측으로 확인).
+    /// 한 번이라도 훑어봤는지. 모델이 기억한다.
     let hasScanned: Bool
-    /// 지금 디스크 상태. "74GB 비울 수 있어요"는 여유 공간 옆에 있어야 크기 감이 온다.
+    /// 지금 디스크 상태. 비울 수 있는 양은 여유 공간 옆에 있어야 크기 감이 온다.
     let diskSpace: DiskSpace?
     var localSnapshotCount: Int = 0
     let items: [ReclaimItem]
-    /// 크기를 재지 못해 목록에서 빠진 것들 — 부분 결과를 완전한 것처럼 보여주지 않는다.
+    /// 크기를 재지 못해 목록에서 빠진 것들. 부분 결과를 완전한 것처럼 보이지 않게 한다.
     var unmeasuredNames: [String] = []
-    /// 끝까지 훑지 못한 폴더 — 있으면 "비울 게 없어요"가 거짓일 수 있다.
+    /// 끝까지 훑지 못한 폴더. 있으면 "비울 게 없어요"가 거짓일 수 있다.
     var incompleteRoots: [String] = []
-    /// 목록에서 생략한 자잘한 앱 캐시 — 생략했다는 사실을 숨기지 않는다.
+    /// 목록에서 생략한 자잘한 앱 캐시. 생략했다는 사실을 숨기지 않는다.
     var smallCaches: (count: Int, bytes: UInt64) = (0, 0)
-    /// 실행 중인 앱·프로세스가 쓰고 있어 뺀 항목 — 끄면 나온다는 안내와 함께.
+    /// 실행 중인 앱·프로세스가 쓰고 있어 뺀 항목.
     var skippedInUse: [ScanReport.InUseSkip] = []
     let isScanning: Bool
     let scanProgress: ScanProgress?
@@ -34,7 +31,7 @@ struct SpacePane: View {
     let note: UserNote?
     /// 휴지통 내용. nil이면 읽을 수 없다는 뜻이라 크기를 말하지 않는다.
     var hasFullDiskAccess: Bool = true
-    /// 한 번도 찾아본 적이 없나. 이 앱을 처음 보는 사람에게만 무엇을 하는지 말한다.
+    /// 처음 보는 사람에게만 이 앱이 무엇을 하는지 말한다.
     var isFirstRun: Bool = false
     var onRecheckAccess: () -> Void = {}
     var trash: TrashContents?
@@ -44,20 +41,19 @@ struct SpacePane: View {
     let onScan: () -> Void
     let onMoveToTrash: ([ReclaimItem]) -> Void
     var onEmptyTrash: () -> Void = {}
-    /// 이 탭이 화면에 나타났을 때 호출한다 — 모델이 "확인하지 않은 스캔 결과"
-    /// 표시(메뉴바 아이콘)를 지울 수 있게.
+    /// 이 탭이 화면에 나타났을 때 호출한다. 모델이 확인하지 않은 스캔 결과 표시를
+    /// 지울 수 있게 한다.
     var onAppear: () -> Void = {}
 
     @State private var selected: Set<String> = []
-    /// 되돌릴 수 없는 삭제라 확인을 한 번 받는다. 팝오버에서는 별도 창(alert)이
-    /// 초점을 가져가며 팝오버를 닫아버릴 수 있어 같은 자리에서 확인한다.
+    /// 되돌릴 수 없는 삭제라 확인을 한 번 받는다. alert은 초점을 가져가며 팝오버를
+    /// 닫아버리므로 같은 자리에서 확인한다.
     @State private var confirmingEmpty = false
-    /// 「허용했어요」를 눌렀는데도 여전히 막혀 있는 상태. 다시 시작해야 한다는
-    /// 사실을 그때 알려준다.
+    /// 「허용했어요」를 눌렀는데도 여전히 막혀 있는 상태.
     @State private var checkedButStillBlocked = false
 
     var body: some View {
-        // 읽어야 의존성이 생긴다 — L()로 만든 문구가 언어 변경을 따라가게 하는 유일한 고리다.
+        // 읽어야 의존성이 생긴다. L()로 만든 문구가 언어 변경을 따라가는 유일한 고리다.
         let _ = locale
         pane().onAppear(perform: onAppear)
     }
@@ -93,17 +89,16 @@ struct SpacePane: View {
                 scanningNote
             } else {
                 if items.isEmpty {
-                    // 결과가 비면 [다시 찾아보기]가 summaryCard와 함께 사라져 탭이
-                    // 재스캔 불가 상태로 굳는다(감사에서 확인) — 진입점을 여기 둔다.
+                    // 결과가 비면 summaryCard와 함께 [다시 찾아보기]도 사라져 탭이
+                    // 재스캔 불가 상태로 굳는다. 진입점을 여기 둔다.
                     HStack(spacing: 8) {
                         EmptyNote(symbol: "sparkles", text: "비울 게 없어요. 지금은 깔끔해요")
                         Spacer(minLength: 0)
                         Button("다시 찾아보기", action: onScan)
                             .buttonStyle(.bordered).controlSize(.small)
                     }
-                    // 마지막 항목까지 옮기면 결과 카드가 통째로 사라져, 정작
-                    // "비우면 공간이 확보돼요"라고 말해 놓고 누를 버튼이 없었다
-                    // (감사에서 확인) — 정리의 마지막 걸음은 목록이 비어도 남긴다.
+                    // 마지막 항목까지 옮기면 결과 카드가 사라져 비우기 버튼도 함께
+                    // 사라진다. 정리의 마지막 걸음은 목록이 비어도 남긴다.
                     if offersTrashWhenEmpty {
                         Card(tint: Palette.apps) { trashLine }
                     }
@@ -126,8 +121,8 @@ struct SpacePane: View {
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
                 if !skippedInUse.isEmpty {
-                    // "shop (node)"처럼 누가 쓰는지 같이 적는다. 항목 이름에 이미
-                    // 앱 이름이 들어 있으면(예: "Slack (Cache)") 겹쳐 적지 않는다.
+                    // 누가 쓰는지 같이 적되, 항목 이름에 이미 앱 이름이 들어 있으면
+                    // 겹쳐 적지 않는다.
                     let entries = skippedInUse.map { skip in
                         skip.name.localizedCaseInsensitiveContains(skip.process)
                             ? skip.name : "\(skip.name) (\(skip.process))"
@@ -157,8 +152,7 @@ struct SpacePane: View {
 
     // MARK: - 디스크 게이지
 
-    /// 탭 맨 위에 항상 보이는 한 줄: 지금 얼마나 차 있고 얼마가 남았는지.
-    /// 스캔 결과의 "N GB 비울 수 있어요"를 이 옆에서 읽어야 값의 크기가 와닿는다.
+    /// 탭 맨 위에 항상 보이는 한 줄. 지금 얼마나 차 있고 얼마가 남았는지 보여준다.
     private func diskGauge(_ disk: DiskSpace) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ProgressView(value: min(1, disk.usedRatio))
@@ -174,9 +168,8 @@ struct SpacePane: View {
                     .font(.system(size: 10.5, design: .monospaced))
                     .foregroundStyle(.tertiary)
             }
-            // "Finder와 df가 다른 여유를 말하는" 영역에 이름을 붙인다. 앱이 지우는
-            // 것이 아니라 시스템이 필요할 때 스스로 비우는 공간이다 — 1GB 미만이면
-            // 언급할 가치가 없어 숨긴다.
+            // Finder와 df가 다른 여유를 말하게 만드는 영역이다. 앱이 지우는 것이
+            // 아니라 시스템이 필요할 때 스스로 비운다. 1GB 미만이면 숨긴다.
             if disk.purgeable >= 1 << 30 {
                 Text(localSnapshotCount > 0
                      ? L("여유 중 %@는 시스템이 필요하면 스스로 비워요 · 로컬 스냅샷 %lld개",
@@ -195,9 +188,8 @@ struct SpacePane: View {
     private var notScannedYet: some View {
         VStack(spacing: 9) {
             if isFirstRun {
-                // 처음 여는 사람이 가장 먼저 알아야 하는 것은 기능이 아니라
-                // **이 앱이 무엇을 하지 않는지**다. 낯선 사람에게 디스크를
-                // 맡기라고 하는 셈이니, 안전 약속을 첫 줄에 둔다.
+                // 처음 여는 사람에게는 기능보다 이 앱이 무엇을 하지 않는지가 먼저다.
+                // 안전 약속을 첫 줄에 둔다.
                 VStack(alignment: .leading, spacing: 6) {
                     Text("쓰지 않는데 자리만 차지하는 파일을 찾아드려요")
                         .font(.system(size: 12, weight: .semibold))
@@ -234,9 +226,8 @@ struct SpacePane: View {
         }
     }
 
-    /// 무한 스피너 대신 정직한 진행을 보여준다: 몇 개 중 몇 개째, 지금 뭘 재는지,
-    /// 얼마나 지났는지. `du`가 느려서 60~90초씩 걸릴 수 있으니, 사용자가 멈춘 건지
-    /// 궁금해하지 않게 하는 것이 목적이다.
+    /// 몇 개 중 몇 개째, 지금 뭘 재는지, 얼마나 지났는지. du가 느려 1분 넘게
+    /// 걸리므로 무한 스피너로는 멈춘 것처럼 보인다.
     private var scanningNote: some View {
         let total = scanProgress?.total ?? 0
         let done = scanProgress?.done ?? 0
@@ -265,8 +256,6 @@ struct SpacePane: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            // 사용자가 직접 누른 스캔은 이제 정상 우선순위로 돈다(ReclaimScanner.lowPriority
-            // 참조) — "낮은 우선순위" 안내는 사실이 아니게 되어 뺐다.
             Text("디스크를 훑는 중이라 시간이 걸려요. 다른 일 하셔도 돼요")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
@@ -275,11 +264,8 @@ struct SpacePane: View {
         .padding(.vertical, 8)
     }
 
-    /// "N분/N시간/N일 전에 확인한 결과예요 · 다시 찾아보기". 재시작해도 매번 다시
-    /// 훑지 않도록 디스크에서 불러온 결과에만 붙는다 — 결과가 얼마나 오래됐는지
-    /// 정직하게 보여주기 위함이다.
-    /// 숫자만 고정폭으로 강조하던 중첩 Text 조립을 버리고 한 문장으로 만든다 —
-    /// 언어마다 어순이 달라 조각을 이어 붙이면 번역할 수 없다.
+    /// 결과가 얼마나 오래됐는지 한 문장으로 말한다. 언어마다 어순이 달라 조각을
+    /// 이어 붙이면 번역할 수 없다.
     private func ageSubtitle(since date: Date) -> Text {
         let minutes = max(0, Int(Date().timeIntervalSince(date) / 60))
         let age: String
@@ -301,7 +287,7 @@ struct SpacePane: View {
 
     // MARK: - 결과 요약
 
-    /// 종류가 캐시인 항목 — 다시 만들어지는 것들만 한꺼번에 고를 수 있다.
+    /// 다시 만들어지는 것들만 한꺼번에 고를 수 있다.
     private var safeToSelectAll: [ReclaimItem] {
         items.filter { !Self.cautionKinds.contains($0.kind) }
     }
@@ -309,8 +295,8 @@ struct SpacePane: View {
     /// 되돌릴 수 없는 종류. 자동 선택에서 빼고, 행에 경로를 함께 보여준다.
     static let userFileKinds: Set<ReclaimKind> = [.staleInstaller, .oldScreenshot, .largeFile]
 
-    /// 「캐시 모두 선택」에서 빼는 종류. 사용자 파일에 **배포용 보관본**을 더한다 —
-    /// 캐시가 아니라 결과물이고, 지우면 배포한 빌드의 크래시 로그를 해석할 수 없다.
+    /// 「캐시 모두 선택」에서 빼는 종류. 배포용 보관본은 캐시가 아니라 결과물이고,
+    /// 지우면 배포한 빌드의 크래시 로그를 해석할 수 없다.
     static let cautionKinds: Set<ReclaimKind> = userFileKinds.union([.xcodeArchive])
 
     private var totalBytes: UInt64 {
@@ -331,12 +317,9 @@ struct SpacePane: View {
                     .font(.system(size: 13, weight: .semibold))
                 Spacer(minLength: 0)
             }
-            // 버튼을 여기 두면 아래 [캐시 모두 선택]과 파란 링크 두 개가 2pt
-            // 간격으로 겹쳐 보인다 — 문장만 남기고 버튼은 액션 줄로 내렸다.
-            // 디스크에서 불러온 결과뿐 아니라 이번 실행에서 훑은 결과도 한 시간이
-            // 지나면 나이를 보여준다 — 메뉴바에 상주하는 앱이라 "이번 실행"이
-            // 며칠씩 이어질 수 있다. 방금 훑은 결과에는 붙이지 않는다("0분 전"은
-            // 소음이다).
+            // 메뉴바 상주 앱이라 "이번 실행"이 며칠씩 이어진다. 디스크에서 불러온
+            // 결과뿐 아니라 이번 실행에서 훑은 결과도 한 시간이 지나면 나이를
+            // 보여준다. 방금 훑은 결과에 "0분 전"은 소음이라 붙이지 않는다.
             if let spaceScanCompletedAt,
                spaceResultsFromDisk || Date().timeIntervalSince(spaceScanCompletedAt) >= 3600 {
                 ageSubtitle(since: spaceScanCompletedAt)
@@ -344,16 +327,15 @@ struct SpacePane: View {
                     .padding(.top, 1)
             }
             HStack(spacing: 6) {
-                // 삼항의 한쪽만 L()이면 다른 쪽은 String 오버로드로 붙어 번역되지 않는다.
+                // 삼항의 한쪽만 L()이면 다른 쪽이 String 오버로드로 붙어 번역되지 않는다.
                 Text(selectedItems.isEmpty
                      ? L("선택한 것만 휴지통으로 옮겨요")
                      : L("%lld개 선택 · %@", selectedItems.count, SizeText.compact(selectedBytes)))
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
-                // 33개를 하나씩 누르게 하지 않는다
-                // **사용자 파일은 "모두 선택"에서 뺀다.** 캐시는 다시 만들어지지만
-                // 설치 파일·스크린샷·큰 파일은 지우면 끝이다 — 한 번의 클릭으로
-                // 그것까지 고르게 만들면 안 된다.
+                // 사용자 파일은 모두 선택에서 뺀다. 캐시는 다시 만들어지지만 설치
+                // 파일·스크린샷·큰 파일은 지우면 끝이라, 한 번의 클릭으로 고르게
+                // 만들면 안 된다.
                 Button(selected.count == safeToSelectAll.count && !safeToSelectAll.isEmpty
                        ? LocalizedStringKey("선택 해제") : LocalizedStringKey("캐시 모두 선택")) {
                     if selected.count == safeToSelectAll.count { selected.removeAll() }
@@ -367,7 +349,7 @@ struct SpacePane: View {
             HStack(spacing: 8) {
                 Button("휴지통으로 옮기기") {
                     onMoveToTrash(selectedItems)
-                    // 거부된 항목이 선택 상태로 남으면 같은 실패를 반복하게 된다.
+                    // 거부된 항목이 선택 상태로 남으면 같은 실패를 반복한다.
                     selected.removeAll()
                 }
                 .buttonStyle(.borderedProminent)
@@ -376,10 +358,9 @@ struct SpacePane: View {
                 if isMoving {
                     ProgressView().controlSize(.small).scaleEffect(0.6)
                 }
-                // 항상 보여준다. 예전에는 디스크에서 불러온 결과에만 보여줬는데
-                // ("방금 훑었으면 누를 이유가 없다"), 메뉴바 상주 앱이라 스캔 후
-                // 며칠이 지나도 "이번 실행"이다 — 한 번 스캔하면 재시작 전까지
-                // 다시 훑을 길이 없었다(사용자 신고).
+                // 결과가 방금 나왔어도 항상 보여준다. 메뉴바 상주 앱이라 스캔 후
+                // 며칠이 지나도 "이번 실행"이고, 숨기면 재시작 전까지 다시 훑을
+                // 길이 없다.
                 Button("다시 찾아보기", action: onScan)
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -394,8 +375,7 @@ struct SpacePane: View {
         }
     }
 
-    /// 앱을 다시 시작한다. 새 인스턴스를 띄운 뒤에 종료해야 창이 하나도 없는
-    /// 순간이 생기지 않는다.
+    /// 새 인스턴스를 띄운 뒤에 종료해야 창이 하나도 없는 순간이 생기지 않는다.
     private func restartApp() {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = true
@@ -405,10 +385,8 @@ struct SpacePane: View {
         }
     }
 
-    /// 캐시를 훑으려면 남의 앱 폴더(Application Support·Containers)를 봐야 하고,
-    /// macOS는 그걸 **앱마다 따로** 묻는다 — 앱 6개면 프롬프트 6개다. 전체 디스크
-    /// 접근 하나면 전부 사라진다. 설정 안에 숨겨두면 아무도 못 찾으므로 스캔하는
-    /// 자리에서 보여준다.
+    /// 캐시를 훑으려면 남의 앱 폴더를 봐야 하고 macOS는 그걸 앱마다 따로 묻는다.
+    /// 전체 디스크 접근 하나로 전부 없앨 수 있어 스캔하는 자리에서 안내한다.
     private var accessBanner: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 5) {
@@ -420,11 +398,8 @@ struct SpacePane: View {
             Text("캐시를 찾으려면 다른 앱의 폴더를 봐야 해서, macOS가 앱마다 따로 물어봐요. 전체 디스크 접근을 한 번 허용하면 그 뒤로는 묻지 않아요.")
                 .font(.system(size: 10)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            // macOS의 전체 디스크 접근은 **앱을 다시 시작해야** 적용된다. 실행 중인
-            // 프로세스는 옛 권한 상태를 그대로 들고 있어서, 허용하고 「허용했어요」를
-            // 눌러도 배너가 사라지지 않는다(사용자 신고). 눌렀는데도 막혀 있으면
-            // 그 사실을 말하고 다시 시작할 길을 준다 — 예전에는 아무 반응이 없어
-            // 고장처럼 보였다.
+            // 전체 디스크 접근은 앱을 다시 시작해야 적용된다. 실행 중인 프로세스는
+            // 옛 권한 상태를 들고 있어서 허용한 뒤에도 배너가 사라지지 않는다.
             if checkedButStillBlocked {
                 HStack(spacing: 6) {
                     Text("아직 반영되지 않았어요 · 앱을 다시 시작하면 적용돼요")
@@ -448,15 +423,15 @@ struct SpacePane: View {
         .background(Palette.over.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
     }
 
-    /// 목록이 빈 화면에서도 휴지통 카드를 보여줄지. 크기를 못 읽는 상태(trash가
-    /// nil)라도 방금 옮겼다면 비워야 공간이 는다는 안내는 보여준다.
+    /// 목록이 빈 화면에서도 휴지통 카드를 보여줄지. 크기를 못 읽어도 방금 옮겼다면
+    /// 비워야 공간이 는다는 안내는 보여준다.
     private var offersTrashWhenEmpty: Bool {
         guard let trash else { return hasMovedToTrash }
         return trash.shouldOfferEmptying(justMoved: hasMovedToTrash)
     }
 
-    /// 정리의 마지막 한 걸음. 여기까지 오지 않으면 「여유」는 1바이트도 늘지 않는다.
-    /// summaryCard와 빈 화면 양쪽에서 쓴다 — 구분선은 summaryCard 쪽에서만 붙인다.
+    /// 정리의 마지막 한 걸음. 여기까지 오지 않으면 여유는 1바이트도 늘지 않는다.
+    /// summaryCard와 빈 화면 양쪽에서 쓰고, 구분선은 summaryCard 쪽에서만 붙인다.
     @ViewBuilder
     private var trashLine: some View {
         if let trash, trash.shouldOfferEmptying(justMoved: hasMovedToTrash) {
@@ -474,7 +449,6 @@ struct SpacePane: View {
                         .buttonStyle(.borderedProminent).controlSize(.small).tint(Palette.over)
                         Button(L("취소")) { confirmingEmpty = false }
                             .buttonStyle(.bordered).controlSize(.small)
-                        // 지우기 전에 무엇이 들었는지 직접 볼 수 있어야 한다.
                         Button(L("휴지통 열기")) { NSWorkspace.shared.open(Trash().openURL) }
                             .buttonStyle(.borderless).controlSize(.small)
                             .font(.system(size: 10.5))
@@ -499,7 +473,7 @@ struct SpacePane: View {
                 }
             }
         } else if trash == nil {
-            // 크기를 읽지 못했다(전체 디스크 접근 없음) — 숫자를 지어내지 않고
+            // 전체 디스크 접근이 없어 크기를 읽지 못했다. 숫자를 지어내지 않고
             // 갈 곳만 알려준다.
             HStack(spacing: 8) {
                 Text("휴지통을 비워야 공간이 실제로 확보돼요")
@@ -546,7 +520,7 @@ struct SpacePane: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { toggle(item) }
-        // 체크 표시가 이미지뿐이라 VoiceOver로는 상태를 알 수 없다 — 행 전체를
+        // 체크 표시가 이미지뿐이라 VoiceOver로는 상태를 알 수 없다. 행 전체를
         // 하나의 토글 버튼으로 노출한다.
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isButton)
@@ -560,14 +534,13 @@ struct SpacePane: View {
         else { selected.insert(item.id) }
     }
 
-    /// 스캐너가 주는 이름은 경로의 마지막 조각이라 "cacache", "caches"처럼
-    /// 무엇인지 알 수 없는 것이 섞인다. 알려진 경로는 사람이 아는 이름으로 바꿔 준다.
+    /// 스캐너가 주는 이름은 경로의 마지막 조각이라 무엇인지 알 수 없는 것이 섞인다.
+    /// 알려진 경로는 사람이 아는 이름으로 바꿔 준다.
     private func displayName(for item: ReclaimItem) -> String {
         for (suffix, name) in Self.knownNames where item.path.hasSuffix(suffix) {
             return name
         }
-        // 저장된 displayName은 스캔한 순간의 언어로 굳어 있다 — 종류·경로로
-        // 다시 만든다(언어를 바꾸면 "Yarn (앱 캐시)"만 한국어로 남았다).
+        // 저장된 displayName은 스캔한 순간의 언어로 굳어 있어 종류·경로로 다시 만든다.
         return ReclaimScanner.displayName(for: item.kind, path: item.path,
                                           fallback: item.displayName)
     }
@@ -599,17 +572,14 @@ struct SpacePane: View {
     ]
 
     private func subtitle(for item: ReclaimItem) -> String {
-        // **저장된 item.note를 쓰지 않는다.** 그 문자열은 스캔한 순간의 언어로
-        // 굳어 있어서, 언어를 바꿔도 "다음 빌드 때 다시 만들어져요"가 한국어로
-        // 남는다(사용자 신고). 종류와 경로만 있으면 언제든 다시 만들 수 있으므로
-        // 그릴 때 만든다 — 문구를 고쳐도 옛 결과가 옛말을 하지 않는 효과도 있다.
+        // 저장된 item.note는 스캔한 순간의 언어로 굳어 있어 쓰지 않는다. 종류와
+        // 경로만 있으면 언제든 다시 만들 수 있으므로 그릴 때 만든다.
         let note = ReclaimScanner.note(for: item.kind, path: item.path)
         let sentence = item.lastUsedDays.map {
             L("%@ · %lld일째 그대로", note, Int64($0))
         } ?? note
-        // 되돌릴 수 없는 종류에는 **어느 폴더에 있는지**를 함께 보여준다.
-        // 파일명만 보이면 같은 이름의 다른 파일을 구별할 수 없다 — 이 맥에서
-        // 연말정산 증빙 스크린샷과 그냥 스크린샷이 화면에서 똑같이 보였다.
+        // 되돌릴 수 없는 종류에는 어느 폴더에 있는지 함께 보여준다. 파일명만
+        // 보이면 같은 이름의 다른 파일을 구별할 수 없다.
         guard Self.userFileKinds.contains(item.kind) else { return sentence }
         return PathDisplay.folder(of: item.path) + "\n" + sentence
     }
@@ -648,14 +618,13 @@ struct SpacePane: View {
 
 }
 
-/// 결과 아래에 붙는 안내줄. 항목이 하나면 제목에 넣어 그대로 보여주고, 여러 개면
-/// 개수만 접어 두었다가 누르면 한 줄씩 펼친다 — 쉼표로 이어 붙이면 잘려서 전부
-/// 볼 수 없다(사용자 신고).
+/// 결과 아래에 붙는 안내줄. 여러 개면 개수만 접어 두었다가 누르면 한 줄씩 펼친다.
+/// 쉼표로 이어 붙이면 잘려서 전부 볼 수 없다.
 private struct NoticeDisclosure: View {
     let symbol: String
-    /// 경고성 안내(권한·측정 실패)에만 색을 준다. nil이면 흐린 회색.
+    /// 경고성 안내에만 색을 준다. nil이면 흐린 회색.
     var tint: Color? = nil
-    /// 항목이 하나면 호출부가 제목에 그 항목을 넣는다("…: Slack").
+    /// 항목이 하나면 호출부가 제목에 그 항목을 넣는다.
     let title: String
     let items: [String]
     var hint: String? = nil

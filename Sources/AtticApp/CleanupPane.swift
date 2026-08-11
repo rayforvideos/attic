@@ -1,20 +1,18 @@
 import SwiftUI
 import AtticCore
 
-/// 정리 탭 — **숨어서 돌고 있는 것**을 모아 둔다. 창은 닫혔는데 살아 있는 개발
-/// 프로세스와, 로그인마다 조용히 올라오는 프로그램이다.
+/// 정리 탭. 창은 닫혔는데 살아 있는 개발 프로세스와, 로그인마다 조용히 올라오는
+/// 프로그램을 모아 둔다.
 struct CleanupPane: View {
-    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
-    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
-    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    /// L()로 만든 문자열은 locale을 읽지 않는다. 이 선언이 없으면 언어를 바꿔도
+    /// L()로 조립한 문구만 옛 언어로 남는다.
     @Environment(\.locale) private var locale
 
     let residueGroups: [ResidueGroup]
     let reapingPaths: Set<String>
     let reapBlocked: Bool
     var launchAgents: [LaunchAgent] = []
-    /// 목록을 한 번이라도 읽었는지. 조회가 끝나기 전의 빈 목록을 "없어요"라고
-    /// 단정하지 않기 위해 필요하다.
+    /// 목록을 한 번이라도 읽었는지. 조회 중인 빈 목록을 "없어요"로 단정하지 않는다.
     var launchAgentsLoaded: Bool = true
     /// 부팅·로그인 항목 전체(시스템 포함, 읽기 전용).
     var startupItems: [StartupItem] = []
@@ -28,8 +26,8 @@ struct CleanupPane: View {
     var body: some View {
         let _ = locale   // 읽어야 언어 변경이 이 뷰를 다시 그린다
         VStack(alignment: .leading, spacing: 9) {
-            // 로그인 항목을 먼저 둔다. 개발 프로세스는 개발자에게만 나오는데,
-            // 그걸 맨 위에 두면 일반 사용자는 늘 "없어요" 한 줄만 보게 된다.
+            // 개발 프로세스는 개발자에게만 나오므로 로그인 항목을 먼저 둔다.
+            // 그러지 않으면 일반 사용자는 늘 "없어요" 한 줄만 보게 된다.
             agentSection
             leftoverSection
             if !residueGroups.isEmpty {
@@ -52,8 +50,8 @@ struct CleanupPane: View {
         startupItems.filter { $0.domain == .system && $0.leftover == nil }
     }
 
-    /// 프로그램은 사라졌는데 자동 실행 등록만 남은 것. macOS는 로그인·부팅마다
-    /// 이걸 띄우려다 실패한다 — 눈에 보이지 않는 찌꺼기다.
+    /// 프로그램은 사라졌는데 자동 실행 등록만 남은 것. macOS가 로그인·부팅마다
+    /// 이걸 띄우려다 조용히 실패한다.
     @ViewBuilder
     private var leftoverSection: some View {
         if !leftovers.isEmpty {
@@ -75,7 +73,7 @@ struct CleanupPane: View {
         }
     }
 
-    /// 값 칸에는 **왜 찌꺼기인지**만 짧게. 경로는 부제로 내려 가운데를 접는다.
+    /// 값 칸에는 왜 찌꺼기인지만 짧게 넣는다. 경로는 부제로 내린다.
     private func leftoverReason(_ item: StartupItem) -> String {
         switch item.leftover {
         case .programMissing: return L("실행 파일 없음")
@@ -84,21 +82,18 @@ struct CleanupPane: View {
         }
     }
 
-    /// 홈은 `~`로 접는다. 화면이 좁아 어차피 가운데가 접히는데, 거기에 사용자
-    /// 계정 이름까지 넣어 자리를 쓸 이유가 없다. 화면을 남에게 보여줄 때
-    /// (스크린샷·화면 공유) 계정 이름이 딸려 나가지도 않는다.
+    /// 홈은 `~`로 접는다. 좁은 화면에서 자리를 아끼고, 스크린샷이나 화면 공유에
+    /// 계정 이름이 딸려 나가지 않는다.
     private func leftoverPath(_ item: StartupItem) -> String {
         let path: String
         if case .programMissing(let raw) = item.leftover { path = raw } else { path = item.plistPath }
         return PathDisplay.abbreviateHome(path)
     }
 
-    /// 관리자 권한이 있어야 바꿀 수 있는 것들. 끄지는 못해도 **무엇이 올라오는지**
-    /// 아는 것 자체가 출발점이다(백신·은행 보안 프로그램·각종 업데이터).
+    /// 관리자 권한이 있어야 바꿀 수 있는 것들이라 보여주기만 한다.
     ///
-    /// DisclosureGroup을 쓰지 않는다: 클릭 영역이 삼각형과 글자에만 걸려 누르기가
-    /// 어렵고, 열렸는지도 눈에 잘 안 들어온다(사용자 신고). 줄 전체를 버튼으로
-    /// 만들고, 화살표를 돌리고, 열려 있는 동안 배경을 남겨 상태를 보이게 한다.
+    /// DisclosureGroup은 클릭 영역이 삼각형과 글자에만 걸려 누르기 어렵고 열린
+    /// 상태도 눈에 띄지 않아, 줄 전체를 버튼으로 직접 만든다.
     @ViewBuilder
     private var systemSection: some View {
         if !systemItems.isEmpty {
@@ -125,7 +120,7 @@ struct CleanupPane: View {
                             .fill(systemExpanded ? Palette.apps.opacity(0.12)
                                   : (systemHovering ? Color.primary.opacity(0.06) : .clear))
                     }
-                    // 배경이 없는 부분도 눌리게 한다 — 글자만 눌리면 찾아서 눌러야 한다.
+                    // 배경이 없는 부분도 눌리게 한다.
                     .contentShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
@@ -151,14 +146,13 @@ struct CleanupPane: View {
         }
     }
 
-    /// 로그인마다 함께 올라오는 상주 프로그램(업데이터류). 끄기는 제거가 아니라
-    /// launchd 등록 해제라 언제든 되돌릴 수 있다 — 그 사실을 문구로 보장한다.
+    /// 로그인마다 함께 올라오는 상주 프로그램. 끄기는 제거가 아니라 launchd 등록
+    /// 해제라 언제든 되돌릴 수 있고, 안내 문구가 그 사실을 보장한다.
     private var agentSection: some View {
         VStack(alignment: .leading, spacing: 1) {
             Eyebrow(text: "로그인할 때 자동 실행되는 프로그램")
             if launchAgents.isEmpty {
-                // 조회가 끝나기 전에는 "없어요"라고 단정하지 않는다 — 빈 목록을
-                // 먼저 보여주면 잘못된 결론을 읽고 탭을 떠난다.
+                // 조회가 끝나기 전에는 "없어요"라고 단정하지 않는다.
                 if launchAgentsLoaded {
                     EmptyNote(symbol: "checkmark.circle",
                               text: "자동 실행되도록 등록된 프로그램이 없어요")

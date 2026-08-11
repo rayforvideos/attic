@@ -25,11 +25,9 @@ public struct ResidueGroup: Sendable, Equatable {
 
 public struct DetectionContext: Sendable {
     public let now: Date
-    // 전 uid 프로세스의 ppid/실행경로 맵 (ProcessSampler.ancestrySnapshot()).
-    // 필수 파라미터로 둔 이유: 기본값(빈 맵)을 허용하면 "조상 데이터 없음"과
-    // "정말로 조상이 없음"을 구분할 수 없게 되어, same-uid 전용 샘플로 만든 맵을
-    // 실수로 흘려보내는 예전 버그(터미널 → root 소유 login 조상 → fail-closed 오발동)가
-    // 조용히 재발한다. 호출부가 매번 명시적으로 채우도록 강제한다.
+    // 전 uid 프로세스의 ppid/실행경로 맵(ProcessSampler.ancestrySnapshot()).
+    // 기본값을 두면 "조상 데이터 없음"과 "정말로 조상이 없음"을 구분할 수 없게 되므로
+    // 호출부가 매번 명시적으로 채우도록 필수 파라미터로 둔다.
     public let ancestry: [pid_t: AncestorInfo]
     public let protectedPaths: [String]
     public let previousCPUTimes: [ProcIdentity: UInt64]   // 직전 관측 창의 CPU 시간
@@ -52,9 +50,9 @@ public struct DetectionContext: Sendable {
 }
 
 public struct ResidueDetector: Sendable {
-    /// 컴포넌트 앵커 + 대소문자 무시 비교. `hasPrefix`만 쓰면 `/Users/ray/wo`가
-    /// `/Users/ray/work-other`까지 보호하고, 틸드가 확장되지 않은 `~/work`는
-    /// 아무것도 보호하지 못한다.
+    /// 경로 컴포넌트 단위로 대소문자를 무시해 비교한다. `hasPrefix`만 쓰면
+    /// `/Users/ray/wo`가 `/Users/ray/work-other`까지 보호하고, 틸드가 확장되지 않은
+    /// `~/work`는 아무것도 보호하지 못한다.
     static func isUnder(_ path: String, root rawRoot: String) -> Bool {
         let root = (rawRoot as NSString).expandingTildeInPath
         guard !root.isEmpty else { return false }
@@ -73,26 +71,22 @@ public struct ResidueDetector: Sendable {
     public func detect(_ samples: [ProcessSample]) -> [ResidueGroup] {
         let eligible = samples.filter { isTarget($0) && !isExcluded($0) }
 
-        // 중복 검출: 동일 (execPath, argv) 조합 카운트
         var comboCount: [String: Int] = [:]
         for s in eligible {
             comboCount[s.execPath + "\u{0}" + s.argv.joined(separator: "\u{0}"), default: 0] += 1
         }
 
-        // 근거(signals) 없는 후보는 여기서 걸러낸다 — 후보 단위 필터링인 이유:
-        // 같은 cwd에 정상 실행 중(0 signals)인 프로세스와 잔여물 의심 프로세스가
-        // 섞여 있을 수 있고, 그룹 단위로 제외/포함을 결정하면 근거 없는 프로세스가
-        // 근거 있는 형제 프로세스에 묻어 그룹째로 정리 대상이 되어버린다(§10 위반).
-        // 그룹은 근거를 가진 후보만 모아 구성하고, 그 결과 후보가 하나도 없는
-        // 그룹(cwd)은 애초에 만들지 않는다.
+        // 근거 없는 후보는 그룹을 만들기 전에 하나씩 걸러낸다. 같은 cwd에 정상
+        // 실행 중인 프로세스가 섞일 수 있는데, 그룹 단위로 판정하면 근거 없는
+        // 프로세스가 형제에 묻어 함께 정리 대상이 된다.
         let candidates = eligible
             .map { s in ResidueCandidate(sample: s, signals: signals(for: s, comboCount: comboCount)) }
             .filter { !$0.signals.isEmpty }
         return Dictionary(grouping: candidates, by: { $0.sample.cwd ?? L("(경로 모름)") })
             .map { ResidueGroup(projectPath: $0.key,
                                 candidates: $0.value.sorted { $0.score > $1.score }) }
-            // 점수순 (설계 §8). 동점이면 용량 → 경로로 완전히 결정된 순서를 만든다:
-            // Dictionary 순서에 기대면 같은 데이터로 다시 계산해도 목록 순서가 흔들린다.
+            // 동점이면 용량, 경로 순으로 완전히 결정된 순서를 만든다. Dictionary
+            // 순서에 기대면 같은 데이터로 다시 계산해도 목록이 흔들린다.
             .sorted {
                 if $0.score != $1.score { return $0.score > $1.score }
                 if $0.totalFootprint != $1.totalFootprint {
@@ -107,21 +101,19 @@ public struct ResidueDetector: Sendable {
     }
 
     func isExcluded(_ s: ProcessSample) -> Bool {
-        if s.pid == context.ownPid { return true }                          // 자기 자신
+        if s.pid == context.ownPid { return true }
         if s.execPath.hasPrefix("/System/") { return true }
         if s.uid != context.ownUid { return true }
         if let cwd = s.cwd, context.protectedPaths.contains(where: { Self.isUnder(cwd, root: $0) }) {
             return true
         }
-        // IDE 자식 보호: ppid 체인을 거슬러 IDE 번들에 닿으면 제외.
-        // context.ancestry는 전 uid를 커버하는 완전한 스냅샷(ProcessSampler.ancestrySnapshot())
-        // 이므로, 이 맵에서 조상이 발견되지 않는 것은 (root 소유라서가 아니라) 그 pid가
-        // 스캔 시점에 실제로 존재하지 않았다는 뜻이다 — 그 경우에만 fail-closed.
+        // ppid 체인을 거슬러 IDE 번들에 닿으면 제외한다. ancestry는 전 uid를 덮는
+        // 완전한 스냅샷이라 여기서 조상을 못 찾는 것은 그 pid가 실제로 없다는 뜻이고,
+        // 그때만 fail-closed로 제외한다.
         var cursor = s.ppid
         var hops = 0
         while cursor > 1, hops < 32 {
             guard let ancestor = context.ancestry[cursor] else {
-                // Ancestor truly absent from the process table → incomplete data, exclude to be safe
                 return true
             }
             if let bundle = AppGrouper.outermostBundlePath(of: ancestor.execPath) {

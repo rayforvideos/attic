@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""번역의 자리표시자가 키와 어긋나면 String(format:)이 잘못된 타입을 읽어
-SIGSEGV로 앱이 죽는다(실측 2026-08-06). 어순을 바꿔야 하면 %1$@ 같은 위치
-지정을 쓴다. 빌드 전에 이 검사를 통과해야 한다."""
+"""번역 문구 검사. 빌드 전에 통과해야 한다.
+
+자리표시자가 키와 어긋나면 String(format:)이 잘못된 타입을 읽어 앱이 죽는다.
+어순을 바꿔야 하면 %1$@ 같은 위치 지정을 쓴다."""
 import re, subprocess, plistlib, sys, glob
 
 def specs(s):
@@ -10,11 +11,11 @@ def specs(s):
 
 fail = 0
 
-# 코드에 있는데 번역이 없는 문구를 찾는다. UI 문구가 L()·Text()로 감싸이지
-# 않으면 영어 환경에서 한국어가 그대로 나온다(실측으로 여러 번 겪었다).
+# 코드에 있는데 번역이 없는 문구를 찾는다. UI 문구가 L()·Text()로 감싸이지 않으면
+# 영어 환경에서 한국어가 그대로 나온다.
 def untranslated(table):
     known_exceptions = {
-        "스크린샷 ",              # macOS가 붙이는 파일명 접두사 — 번역 대상 아님
+        "스크린샷 ",              # macOS가 붙이는 파일명 접두사라 번역 대상이 아니다
         "kill(0)/kill(-1) 방어",  # precondition 메시지
         "한국어",                  # 언어 이름은 그 언어로 적는다
     }
@@ -52,8 +53,8 @@ for path in glob.glob('Resources/*.lproj/Localizable.strings'):
                   f"\n  키: {key}\n  값: {value}")
             fail += 1
 
-# stringsdict도 같은 이유로 검사한다. 각 변형(one/other)을 포맷 문자열에
-# 끼워 넣은 결과의 자리표시자가 키와 어긋나면 런타임에 똑같이 죽는다.
+# stringsdict도 같은 이유로 검사한다. 같은 키가 양쪽에 있으면 stringsdict가
+# .strings보다 우선하므로 이쪽이 틀리면 .strings가 맞아도 죽는다.
 for path in glob.glob('Resources/*.lproj/Localizable.stringsdict'):
     with open(path, 'rb') as f:
         table = plistlib.load(f)
@@ -77,8 +78,7 @@ for path in glob.glob('Resources/*.lproj/Localizable.stringsdict'):
                     text = variant if other == name else variables[other]['other']
                     resolved = resolved.replace(f'%#@{other}@', text)
                 ks, rs = specs(key), specs(resolved)
-                # .strings 검사와 같은 규칙: 위치 지정(%1$@)을 쓰면 순서가
-                # 달라도 되고, 타입 집합만 같으면 된다
+                # .strings 검사와 같은 규칙
                 if any(i for i, _ in rs):
                     mismatch = sorted(t for _, t in ks) != sorted(t for _, t in rs)
                 else:

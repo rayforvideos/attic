@@ -3,9 +3,8 @@ import os
 
 private let logger = os.Logger(subsystem: "com.sangjunpark.attic", category: "space")
 
-/// One completed space scan, persisted so the app doesn't have to re-run a
-/// 60~90 second `du` sweep on every launch just to show what it already
-/// found last time.
+/// 끝난 공간 스캔 한 번의 결과. 지난번에 찾은 것을 보여주자고 켤 때마다 1분 넘는
+/// `du` 훑기를 다시 돌리지 않으려고 저장한다.
 public struct SpaceScanRecord: Sendable, Codable, Equatable {
     public let items: [ReclaimItem]
     public let completedAt: Date
@@ -15,10 +14,8 @@ public struct SpaceScanRecord: Sendable, Codable, Equatable {
         self.completedAt = completedAt
     }
 
-    /// 필드를 추가·제거할 때 **명시적으로** 디코딩한다. 프로퍼티 기본값만 두면
-    /// 합성된 `init(from:)`이 키가 없는 옛 파일에서 그대로 실패하고(실측),
-    /// 사용자는 지난 스캔 결과 전부를 잃은 채 "찾아보기" 화면으로 돌아간다.
-    /// 지금은 spotlightPaths가 든 옛 파일도 읽혀야 한다(그 키는 무시한다).
+    /// 직접 디코딩한다. 프로퍼티 기본값만 두면 합성된 `init(from:)`이 키 없는 옛
+    /// 파일에서 실패해 사용자가 지난 스캔 결과를 통째로 잃는다. 모르는 키는 무시한다.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         items = try container.decode([ReclaimItem].self, forKey: .items)
@@ -26,10 +23,8 @@ public struct SpaceScanRecord: Sendable, Codable, Equatable {
     }
 }
 
-/// Persists the last space scan result to
-/// `~/Library/Application Support/Attic/space.json`. Mirrors
-/// `TrendStore`'s shape: load-on-init, best-effort save, never throws to
-/// callers — a corrupt or missing file just means "no prior result."
+/// 마지막 공간 스캔 결과를 `~/Library/Application Support/Attic/space.json`에
+/// 저장한다. 호출자에게 throw하지 않는다. 깨지거나 없는 파일은 "지난 결과 없음"이다.
 public struct SpaceStore: Sendable {
     let fileURL: URL
 

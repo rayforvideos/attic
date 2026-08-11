@@ -1,27 +1,23 @@
 #!/bin/bash
-# Scripts/make-app.sh — swift build 산출물을 .app 번들로 조립하고 서명
+# Scripts/make-app.sh — swift build 산출물을 .app 번들로 조립하고 서명한다.
 #
-# 서명 아이덴티티: 키체인에 Apple Development 인증서(무료 계정으로 발급)가
-# 있으면 그걸 쓴다. 애드혹 서명은 알림 권한 프롬프트조차 뜨지 않고 즉시
-# 거부되며(실측 2026-08-05, macOS 26), 리빌드마다 cdhash가 바뀌어 TCC/알림
-# 권한이 초기화된다. 인증서가 없으면 애드혹으로 내려가되 경고를 남긴다.
+# 키체인에 Apple Development 인증서가 있으면 그것으로 서명한다. 애드혹 서명은 알림
+# 권한 요청이 프롬프트 없이 거부되고, 리빌드마다 cdhash가 바뀌어 TCC·알림 권한이
+# 초기화된다. 인증서가 없으면 애드혹으로 내려가되 경고를 남긴다.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# 번역 자리표시자가 어긋나면 실행 중 SIGSEGV로 죽는다 — 빌드 전에 막는다.
+# 번역 자리표시자가 어긋나면 실행 중에 죽는다. 빌드 전에 막는다.
 python3 Scripts/check-strings.py || exit 1
 
-# 인텔 맥에서도 돌아야 한다. macOS 26은 인텔을 지원하는 마지막 버전이고,
-# arm64로만 빌드하면 그 사용자들은 아예 실행할 수 없다(실측: 배포본이 arm64
-# 전용이었다). 유니버설은 빌드가 조금 느려지는 대신 둘 다 담는다.
+# 인텔 맥에서도 돌아야 한다. arm64로만 빌드하면 그 사용자들은 실행조차 할 수 없다.
 swift build -c release --arch arm64 --arch x86_64
 APP=build/Attic.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 BIN=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/AtticApp
 cp "$BIN" "$APP/Contents/MacOS/Attic"
-# 두 아키텍처가 실제로 들어갔는지 확인한다. 한쪽만 담기면 그 사용자에게는
-# "열 수 없는 앱"이 되고, 우리는 알 방법이 없다.
+# 한쪽 아키텍처만 담기면 그 사용자에게는 열 수 없는 앱이 되고 우리는 알 수 없다.
 archs=$(lipo -archs "$APP/Contents/MacOS/Attic")
 case "$archs" in
     *arm64*x86_64*|*x86_64*arm64*) ;;
@@ -29,8 +25,8 @@ case "$archs" in
 esac
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-# 언어 리소스. SPM 리소스 번들을 쓰지 않고 .app에 직접 넣는다 — Bundle.main이
-# 곧 이 번들이라 앱·코어 양쪽에서 같은 테이블을 조회할 수 있다.
+# 언어 리소스는 SPM 리소스 번들 대신 .app에 직접 넣는다. Bundle.main이 곧 이
+# 번들이라야 앱과 코어가 같은 테이블을 조회한다.
 for lproj in Resources/*.lproj; do
     cp -R "$lproj" "$APP/Contents/Resources/"
 done
@@ -45,9 +41,7 @@ if [[ -z "$IDENTITY" ]]; then
     TIMESTAMP_FLAG=--timestamp=none
     echo "경고: Apple Development 인증서가 없어 애드혹으로 서명합니다 — 알림 배너가 비활성화됩니다" >&2
 fi
-# --timestamp: 애플 타임스탬프 서버의 보안 타임스탬프. 공증(notarization)의
-# 필수 조건이라 개발 빌드에도 넣어둔다 — 배포 직전에야 없는 것을 발견하면
-# 그때 서명 설정을 처음부터 다시 확인해야 한다.
+# 보안 타임스탬프는 공증의 필수 조건이라 개발 빌드에도 넣어둔다.
 codesign --force --sign "$IDENTITY" --options runtime $TIMESTAMP_FLAG \
   --entitlements Attic.entitlements "$APP"
 sign_info=$(codesign -dv "$APP" 2>&1)

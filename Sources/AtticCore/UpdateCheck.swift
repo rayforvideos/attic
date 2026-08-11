@@ -4,8 +4,8 @@ import Foundation
 public struct AppVersion: Sendable, Equatable, Comparable, CustomStringConvertible {
     public let parts: [Int]
 
-    /// `v0.1.0`, `0.1`, `1.2.3.4` 모두 받는다. 숫자가 아닌 조각은 버린다 —
-    /// 태그 규칙이 흔들려도 앱이 조용히 잘못된 비교를 하지 않게.
+    /// `v0.1.0`, `0.1`, `1.2.3.4`를 모두 받고 숫자가 아닌 조각은 버린다. 태그 규칙이
+    /// 흔들려도 앱이 조용히 잘못된 비교를 하지 않게 하려는 것이다.
     public init?(_ text: String) {
         let trimmed = text.hasPrefix("v") ? String(text.dropFirst()) : text
         let numbers = trimmed.split(separator: ".").compactMap { Int($0) }
@@ -17,7 +17,7 @@ public struct AppVersion: Sendable, Equatable, Comparable, CustomStringConvertib
 
     public static func < (lhs: AppVersion, rhs: AppVersion) -> Bool {
         for index in 0..<max(lhs.parts.count, rhs.parts.count) {
-            // 없는 자리는 0으로 본다: 0.2 == 0.2.0
+            // 없는 자리는 0으로 본다. 0.2와 0.2.0은 같다.
             let left = index < lhs.parts.count ? lhs.parts[index] : 0
             let right = index < rhs.parts.count ? rhs.parts[index] : 0
             if left != right { return left < right }
@@ -33,14 +33,13 @@ public struct AvailableUpdate: Sendable, Equatable {
     public let downloadURL: URL?
 }
 
-/// 새 버전이 나왔는지 확인한다. 받아서 교체하는 일은 `Updater`가 한다 —
-/// 여기서는 **무엇이 최신인지만** 알아낸다.
+/// 새 버전이 나왔는지만 확인한다. 받아서 교체하는 일은 `Updater`가 한다.
 ///
-/// **이 앱이 네트워크를 쓰는 유일한 곳이다.** 보내는 것은 아무것도 없다:
-/// 식별자·사용 기록·경로 모두 담지 않는 평범한 GET 하나다. 설정에서 끌 수 있다.
+/// 이 앱이 네트워크를 쓰는 유일한 곳이다. 식별자도 사용 기록도 경로도 담지 않는
+/// GET 하나이고 설정에서 끌 수 있다.
 public struct UpdateChecker: Sendable {
-    /// GitHub Releases API. 별도 버전 파일을 두지 않는다 — 릴리스를 올리는 것이
-    /// 곧 배포이므로, 사람이 잊고 갱신하지 않을 자리를 만들지 않는다.
+    /// GitHub Releases API. 별도 버전 파일을 두면 사람이 잊고 갱신하지 않을 자리가
+    /// 생기므로 릴리스 자체를 기준으로 삼는다.
     public static let releasesEndpoint =
         URL(string: "https://api.github.com/repos/rayforvideos/attic/releases/latest")!
     public static let releasesPage =
@@ -57,8 +56,7 @@ public struct UpdateChecker: Sendable {
             var request = URLRequest(url: UpdateChecker.releasesEndpoint)
             request.timeoutInterval = 10
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            // 실패는 조용히 넘긴다 — 업데이트 확인이 안 되는 것은 사용자가 지금
-            // 하려는 일(공간 정리)과 무관하다.
+            // 실패는 조용히 넘긴다. 업데이트 확인은 사용자가 지금 하려는 일과 무관하다.
             return try? await URLSession.shared.data(for: request).0
         }
     }
@@ -69,8 +67,8 @@ public struct UpdateChecker: Sendable {
         return Self.parse(data, currentVersion: currentVersion)
     }
 
-    /// 응답에서 태그를 읽어 지금 버전과 견준다. 파싱 실패·형식 변경은 nil이다 —
-    /// **모르면 알리지 않는다.** 있지도 않은 새 버전을 권하면 신뢰를 잃는다.
+    /// 응답의 태그를 지금 버전과 견준다. 파싱 실패나 형식 변경은 nil이다. 있지도 않은
+    /// 새 버전을 권하지 않는다.
     static func parse(_ data: Data, currentVersion: String) -> AvailableUpdate? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = json["tag_name"] as? String,
@@ -80,7 +78,6 @@ public struct UpdateChecker: Sendable {
         else { return nil }
         let page = (json["html_url"] as? String).flatMap(URL.init(string:))
             ?? releasesPage
-        // .dmg 자산이 있으면 앱 안에서 받아 교체할 수 있다.
         let dmg = (json["assets"] as? [[String: Any]])?
             .compactMap { $0["browser_download_url"] as? String }
             .first { $0.hasSuffix(".dmg") }

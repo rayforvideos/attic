@@ -5,18 +5,15 @@ private let logger = os.Logger(subsystem: "com.sangjunpark.attic", category: "up
 
 /// 새 버전을 내려받아 교체한다.
 ///
-/// **이 앱은 전체 디스크 접근을 요구한다.** 그런 앱이 자기 자신을 바꾸는 경로를
-/// 만드는 것은 위험한 일이므로, 교체 전에 반드시 두 가지를 확인한다:
+/// 전체 디스크 접근을 가진 앱이 자기 자신을 바꾸는 경로라 교체 전에 두 가지를
+/// 확인하고, 하나라도 아니면 교체하지 않고 실패로 끝낸다.
 ///
-/// 1. **팀 ID 고정** — 내려받은 앱이 우리 Developer ID(`5XDWSJ2JK7`)로 서명돼
-///    있는가. 통신이 가로채여도 공격자는 이 서명을 만들 수 없다.
-/// 2. **공증 확인** — Gatekeeper가 실행을 허락하는가(`spctl -a -t exec`).
+/// 1. 팀 ID 고정. 우리 Developer ID로 서명돼 있어야 한다. 통신이 가로채여도
+///    공격자는 이 서명을 만들 수 없다.
+/// 2. 공증 확인. Gatekeeper가 실행을 허락해야 한다(`spctl -a -t exec`).
 ///
-/// 둘 중 하나라도 아니면 **교체하지 않고 실패로 끝낸다.** 확인할 수 없는 것을
-/// 설치하지 않는다.
-///
-/// 옛 버전은 지우지 않고 **휴지통으로 보낸다** — 이 앱이 사용자 파일에 하는 것과
-/// 같은 약속이다. 새 버전이 문제가 있으면 되돌릴 수 있어야 한다.
+/// 옛 버전은 지우지 않고 휴지통으로 보낸다. 새 버전에 문제가 있으면 되돌릴 수
+/// 있어야 한다.
 public struct Updater: Sendable {
     /// 우리 Developer ID 팀. 서명 확인의 기준이라 상수로 못 박는다.
     public static let teamID = "5XDWSJ2JK7"
@@ -25,7 +22,7 @@ public struct Updater: Sendable {
         case downloadFailed
         case mountFailed
         case appNotFoundInImage
-        /// 서명이 우리 것이 아니다 — 가장 중요한 거부다.
+        /// 서명이 우리 것이 아니다. 가장 중요한 거부다.
         case signatureMismatch(String)
         case notNotarized(String)
         case notNewer(String)
@@ -57,8 +54,8 @@ public struct Updater: Sendable {
         return nil
     }
 
-    /// `codesign -dvv` 출력이 Developer ID로 서명된 것인지. 개발용(Apple
-    /// Development) 서명은 배포본이 아니므로 거부한다.
+    /// Developer ID로 서명된 것인지. 개발용(Apple Development) 서명은 배포본이
+    /// 아니므로 거부한다. 공증도 Developer ID 서명이라야 통과한다.
     static func isDeveloperIDSigned(_ output: String) -> Bool {
         output.split(separator: "\n").contains { $0.hasPrefix("Authority=Developer ID Application:") }
     }
@@ -101,7 +98,7 @@ public struct Updater: Sendable {
         return bundleURL
     }
 
-    /// 서명·공증·버전을 모두 확인한다. **하나라도 아니면 던진다.**
+    /// 서명·공증·버전을 모두 확인한다. 하나라도 아니면 던진다.
     func verify(_ app: URL) throws {
         let signing = run(["/usr/bin/codesign", "-dvv", app.path])
         let output = signing.output
@@ -118,7 +115,7 @@ public struct Updater: Sendable {
         guard Self.isNotarized(gatekeeper.output) else {
             throw Failure.notNotarized(L("공증을 확인할 수 없어요"))
         }
-        // 버전까지 확인한다 — 낮은 버전으로 되돌리는 것도 업데이트가 아니다.
+        // 낮은 버전으로 되돌리는 것도 업데이트가 아니다.
         let plist = app.appending(path: "Contents/Info.plist")
         guard let data = try? Data(contentsOf: plist),
               let info = try? PropertyListSerialization.propertyList(from: data, format: nil)
@@ -132,14 +129,10 @@ public struct Updater: Sendable {
 
     /// 새 앱을 그 자리에 놓는다.
     ///
-    /// **순서가 중요하다.** 예전에는 지금 앱을 먼저 휴지통으로 보내고 복사했는데,
-    /// 그러면 복사가 실패했을 때(디스크 부족, 이미지 분리, 권한) 앱이 아예 사라진
-    /// 채로 끝난다. 디스크가 꽉 찬 사람이 쓰는 앱이라 그 상황이 특히 현실적이다.
-    ///
-    /// 지금은 옆자리에 먼저 복사해 두고, 그게 성공한 뒤에야 원래 것을 치운다.
-    /// 마지막 단계는 같은 볼륨 안에서의 이름 바꾸기라 사실상 실패하지 않는다.
-    /// 옛 버전은 지우지 않고 휴지통으로 보낸다 — 이 앱이 사용자 파일에 하는
-    /// 약속과 같다.
+    /// 순서가 중요하다. 옆자리에 먼저 복사해 두고 그게 성공한 뒤에야 원래 것을
+    /// 치운다. 반대로 하면 복사가 실패했을 때 앱이 사라진 채로 끝나고, 디스크가 꽉
+    /// 찬 사람이 쓰는 앱이라 그 상황이 특히 현실적이다. 마지막 단계는 같은 볼륨
+    /// 안에서의 이름 바꾸기라 사실상 실패하지 않는다.
     private func replace(with newApp: URL) throws {
         let fm = FileManager.default
         let staging = bundleURL.deletingLastPathComponent()
@@ -157,7 +150,7 @@ public struct Updater: Sendable {
             }
             try fm.moveItem(at: staging, to: bundleURL)
         } catch {
-            // 여기서 실패하면 옆자리 사본이 남아 사용자를 헷갈리게 한다 — 치운다.
+            // 옆자리 사본이 남으면 사용자를 헷갈리게 하므로 치운다.
             try? fm.removeItem(at: staging)
             throw Failure.replaceFailed(error.localizedDescription)
         }

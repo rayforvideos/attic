@@ -32,9 +32,9 @@ public struct ProcessSampler: ProcessSampling {
     }
 
     /// 전 uid 프로세스의 ppid/실행경로 맵. PROC_PIDT_SHORTBSDINFO와 proc_pidpath는
-    /// NO_CHECK_SAME_USER라 root 소유 조상(예: /usr/bin/login)도 빠짐없이 커버한다.
-    /// 잔여물 판정의 ppid 체인 보행은 반드시 이 스냅샷을 써야 한다 — same-uid 전용
-    /// `sample()`로 만든 맵은 root 조상에서 구조적으로 끊겨 fail-closed가 오작동한다.
+    /// NO_CHECK_SAME_USER라 root 소유 조상까지 덮는다. ppid 체인 보행은 반드시 이
+    /// 스냅샷을 써야 한다. same-uid 전용 `sample()` 맵은 root 조상에서 끊겨
+    /// fail-closed 판정이 오작동한다.
     public func ancestrySnapshot() -> [pid_t: AncestorInfo] {
         var result: [pid_t: AncestorInfo] = [:]
         for pid in Self.allPids() {
@@ -75,7 +75,7 @@ public struct ProcessSampler: ProcessSampling {
         var info = rusage_info_v4()
         let ret = withUnsafeMutablePointer(to: &info) { ptr in
             ptr.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) {
-                proc_pid_rusage(pid, RUSAGE_INFO_V4, $0)  // flavor 명시 고정 (v6 확장 불필요)
+                proc_pid_rusage(pid, RUSAGE_INFO_V4, $0)
             }
         }
         return ret == 0 ? info : nil
@@ -85,7 +85,6 @@ public struct ProcessSampler: ProcessSampling {
         let maxPath = 4 * Int(MAXPATHLEN)               // PROC_PIDPATHINFO_MAXSIZE 매크로 미노출
         var buf = [CChar](repeating: 0, count: maxPath)
         guard proc_pidpath(pid, &buf, UInt32(maxPath)) > 0 else { return "" }
-        // Decode without deprecated String(cString:): find NUL and convert prefix
         if let nullIndex = buf.firstIndex(of: 0) {
             let bytes = buf[0..<nullIndex].map { UInt8(bitPattern: $0) }
             return String(decoding: bytes, as: UTF8.self)
@@ -98,7 +97,6 @@ public struct ProcessSampler: ProcessSampling {
         let size = Int32(MemoryLayout<proc_vnodepathinfo>.stride)
         let ret = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, size)
         guard ret == size else { return nil }
-        // Decode without deprecated String(cString:): find NUL and convert prefix
         return withUnsafePointer(to: &info.pvi_cdir.vip_path) {
             $0.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { ptr in
                 var len = 0
@@ -151,16 +149,9 @@ public struct ProcessSampler: ProcessSampling {
         var i = MemoryLayout<Int32>.stride
         while i < bufSize && buf[i] != 0 { i += 1 }     // exec_path 스킵
 
-        // LIMITATION: argv[0] empty-string ambiguity
-        // KERN_PROCARGS2 format: [argc][exec_path\0][padding NULs][argv[0]\0][argv[1]\0]...
-        // After exec_path's NUL, the kernel adds padding NULs to align argv to a boundary.
-        // If argv[0] is an empty string, it appears as a single NUL byte at the boundary.
-        // At the byte level, this is indistinguishable from padding: both are NUL sequences.
-        // Therefore, if argv[0] is empty, we cannot distinguish it from padding and will
-        // consume it, causing us to skip argv[0] and read argv[1] as argv[0], etc.
-        // This is a known limitation of KERN_PROCARGS2 parsing and matches the behavior
-        // of other standard tools that parse this interface. We accept this limitation
-        // as it is unavoidable without additional kernel-level metadata.
+        // KERN_PROCARGS2는 exec_path 뒤에 정렬용 널 패딩을 넣는데, argv[0]이 빈
+        // 문자열이면 바이트 수준에서 패딩과 구분되지 않아 한 칸씩 밀려 읽힌다.
+        // 커널이 주는 정보만으로는 피할 수 없어 그대로 둔다.
         while i < bufSize && buf[i] == 0 { i += 1 }     // 널 패딩 스킵 (개수 가변)
         var argv: [String] = []
         var start = i

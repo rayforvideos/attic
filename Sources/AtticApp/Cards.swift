@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// 묶음 카드. 구분선으로 띠를 나누는 대신 내용을 카드에 담는다 —
-/// macOS 26의 기본 어법이고, 무엇이 한 덩어리인지 눈으로 바로 잡힌다.
+/// 묶음 카드. 구분선 대신 카드로 덩어리를 나눈다(macOS 26의 기본 어법).
 struct Card<Content: View>: View {
     var tint: Color? = nil
     @ViewBuilder var content: Content
@@ -22,8 +21,8 @@ struct Card<Content: View>: View {
     }
 }
 
-/// 목록의 한 줄. 왼쪽 심볼로 종류를, 오른쪽 값으로 크기를 읽게 하고,
-/// 행동은 **항상 보이는 버튼**으로 둔다 — 호버해야 나타나는 버튼은 있는 줄도 모른다.
+/// 목록의 한 줄. 왼쪽 심볼로 종류를, 오른쪽 값으로 크기를 읽는다.
+/// 행동 버튼은 항상 보인다. 호버해야 나타나면 있는 줄도 모른다.
 struct MetricRow<Trailing: View>: View {
     let symbol: String
     let symbolTint: Color
@@ -31,13 +30,12 @@ struct MetricRow<Trailing: View>: View {
     let subtitle: String?
     let value: String
     var valueTint: Color = .primary
-    /// 값 앞에 작게 붙는 상태 아이콘 (예: 느리게 해둔 프로세스의 거북이 표시). 기본은 없음.
+    /// 값 앞에 작게 붙는 상태 아이콘(예: 느리게 해둔 프로세스의 거북이).
     var valueIcon: String? = nil
     var valueIconTint: Color = .secondary
     var subtitleLines: Int = 1
-    /// 경로는 **가운데를 접어야** 한다. 뒤를 자르면 정작 무엇인지 알려주는
-    /// 파일명이 사라지고 "/Library/PrivilegedHelperTools/com.bjango.ista…"만
-    /// 남는다. 문장은 그대로 뒤를 자른다.
+    /// 경로는 가운데를 접는다. 뒤를 자르면 정작 무엇인지 알려주는 파일명이
+    /// 사라진다. 문장은 기본값대로 뒤를 자른다.
     var subtitleTruncation: Text.TruncationMode = .tail
     @ViewBuilder var trailing: Trailing
 
@@ -96,10 +94,10 @@ extension MetricRow where Trailing == EmptyView {
     }
 }
 
-/// 행에 붙는 작은 실행 버튼. 눌러도 되는 것처럼 보여야 한다.
+/// 행에 붙는 작은 실행 버튼.
 ///
-/// 라벨은 `LocalizedStringKey`다 — String으로 받으면 SwiftUI가 번역 테이블을
-/// 조회하지 않고 그대로 그린다(기기 언어가 영어여도 한국어가 나온다).
+/// 라벨은 `LocalizedStringKey`여야 한다. String으로 받으면 SwiftUI가 번역
+/// 테이블을 조회하지 않고 그대로 그린다.
 struct RowAction: View {
     let label: LocalizedStringKey
     let busy: Bool
@@ -127,7 +125,7 @@ struct RowAction: View {
     }
 }
 
-/// 아무것도 할 일이 없을 때. 빈 화면은 안내할 자리다.
+/// 할 일이 없을 때 빈 자리를 채우는 안내.
 struct EmptyNote: View {
     let symbol: String
     let text: LocalizedStringKey

@@ -10,33 +10,28 @@ final class DiagnosticsModel {
     var notifier = Notifier()
 
     private(set) var spaceItems: [ReclaimItem] = []
-    /// 이번 스캔에서 크기를 재지 못해 목록에서 빠진 것들의 사람 이름. 부분 결과를
-    /// 완전한 것처럼 보여주지 않기 위해 화면에 함께 표시한다. 세션 한정(영속 안 함).
+    /// 크기를 재지 못해 목록에서 빠진 항목. 부분 결과임을 화면이 밝히는 데 쓴다.
     private(set) var unmeasuredNames: [String] = []
-    /// 끝까지 훑지 못한 프로젝트 폴더 — 결과가 부분 결과임을 화면이 말해야 한다.
+    /// 끝까지 훑지 못한 프로젝트 폴더. 결과가 부분 결과임을 화면이 밝히는 데 쓴다.
     private(set) var incompleteRoots: [String] = []
     /// 목록에서 생략한 자잘한 앱 캐시(개수, 합계).
     private(set) var smallCaches: (count: Int, bytes: UInt64) = (0, 0)
-    /// 실행 중인 앱·프로세스가 쓰고 있어 목록에서 뺀 항목 — 누가 쓰는지 함께.
+    /// 실행 중인 앱·프로세스가 쓰고 있어 목록에서 뺀 항목.
     private(set) var skippedInUse: [ScanReport.InUseSkip] = []
     private(set) var isScanningSpace = false
-    /// 한 번이라도 훑어봤는지. 뷰가 아니라 모델이 기억해야 한다 — 뷰 로컬 상태로 두면
-    /// 탭을 옮겼다 오거나 뷰가 다시 만들어질 때 결과가 있는데도 시작 화면이 뜬다.
+    /// 한 번이라도 훑어봤는지. 뷰 로컬 상태로 두면 탭을 옮겼다 오거나 뷰가 다시
+    /// 만들어질 때 결과가 있는데도 시작 화면이 뜬다.
     private(set) var hasScannedSpace = false
-    /// 작업 결과 한 줄. 팝오버는 초점만 잃어도 닫히므로, 닫는다고 지우면 실패
-    /// 보고("N개는 사용 중이라 남았어요")를 다 읽기 전에 잃는다(감사에서 확인)
-    /// — 닫아도 남겨 두고, 오래 묵은 것만 다시 열 때 치운다.
+    /// 작업 결과 한 줄. 팝오버는 초점만 잃어도 닫히므로 닫을 때 지우면 실패 보고를
+    /// 읽기 전에 사라진다. 다시 열 때 오래 묵은 것만 치운다.
     private(set) var spaceNote: UserNote? {
         didSet { spaceNoteAt = spaceNote == nil ? nil : Date() }
     }
     private var spaceNoteAt: Date?
-    /// 휴지통 내용. nil은 "읽을 수 없음"(전체 디스크 접근 없음)이고 0개와 다르다.
-    /// 전체 디스크 접근 여부. 없으면 macOS가 **앱마다 따로** "다른 앱의 데이터에
-    /// 접근하려고 합니다"를 묻는다(캐시를 훑으려면 남의 앱 폴더를 봐야 한다).
-    /// 이 권한 하나면 그 프롬프트가 전부 사라진다 — 유일한 방법이다.
+    /// 전체 디스크 접근 여부. 없으면 macOS가 앱마다 따로 접근 허용을 묻는다.
+    /// 캐시를 훑으려면 남의 앱 폴더를 봐야 하고, 그 프롬프트를 없애는 길은 이것뿐이다.
     private(set) var hasFullDiskAccess = FullDiskAccess.isGranted
-    /// 한 번이라도 찾아본 적이 있나. 첫 실행에만 이 앱이 무엇을 하는지 알려주고,
-    /// 그 뒤로는 방해하지 않는다(재설치해도 결과가 남아 있으면 첫 실행이 아니다).
+    /// 한 번이라도 찾아본 적이 있나. 첫 실행에만 이 앱이 무엇을 하는지 알려준다.
     private(set) var hasEverScanned =
         UserDefaults.standard.bool(forKey: "hasEverScanned")
     /// 새 버전이 나왔으면 그 정보. 알려주기만 하고 내려받지는 않는다.
@@ -44,95 +39,84 @@ final class DiagnosticsModel {
     /// 업데이트 진행 상태. nil이면 진행 중이 아니다.
     private(set) var updateProgress: String?
     private(set) var updateNote: UserNote?
+    /// 휴지통 내용. nil은 "읽을 수 없음"(전체 디스크 접근 없음)이고 0개와 다르다.
     private(set) var trash: TrashContents?
     private(set) var isEmptyingTrash = false
     /// 이번 실행에서 휴지통으로 옮긴 적이 있는지. 옮긴 직후에는 양과 무관하게
-    /// "비우기"를 권해야 한다 — 100MB 문턱만 쓰면 그보다 적게 옮긴 사람은
-    /// 비우기 버튼을 영영 보지 못한다(실사용 보고).
+    /// 비우기를 권한다. 100MB 문턱만 쓰면 그보다 적게 옮긴 사람은 버튼을 못 본다.
     private(set) var hasMovedToTrash = false
-    /// 휴지통으로 옮기는 중. 이 값은 뷰가 아니라 모델이 들고 있어야 한다 —
-    /// 옮기는 동안 휴지통을 비우거나 앱을 교체하는 것을 막아야 하는데, 그 판단이
-    /// 뷰에 흩어져 있으면 다른 경로(도커 메뉴 등)로 들어올 때 뚫린다.
+    /// 휴지통으로 옮기는 중. 옮기는 동안 휴지통 비우기와 앱 교체를 막아야 하는데,
+    /// 그 판단이 뷰에 흩어져 있으면 다른 경로로 들어올 때 뚫린다.
     private(set) var isMovingToTrash = false
-    /// 스캔 도중의 정직한 진행 상황. 무한 스피너 대신 몇 개 중 몇 개째, 지금 뭘 재는지를
-    /// 보여주기 위함이다. 스캔 중이 아니면 nil.
+    /// 스캔 진행 상황. 스캔 중이 아니면 nil.
     private(set) var scanProgress: ScanProgress?
-    /// 경과 시간 표시("N초 지났어요")를 위한 시작 시각. 스캔 중이 아니면 nil.
+    /// 경과 시간 표시를 위한 시작 시각. 스캔 중이 아니면 nil.
     private(set) var scanStartedAt: Date?
-    /// 마지막으로 스캔이 끝난 시각. `space.json`에서 불러왔든 방금 훑었든 채워진다 —
-    /// 결과의 "나이"를 보여주기 위함이다.
+    /// 마지막으로 스캔이 끝난 시각. 디스크에서 불러왔든 방금 훑었든 채워진다.
     private(set) var spaceScanCompletedAt: Date?
-    /// 이번 실행에서 아직 다시 훑지 않고 디스크에서 불러온 결과를 그대로 보여주고
-    /// 있는지. true면 화면이 "N 전에 확인한 결과예요 · 다시 찾아보기"를 보여줘야 한다.
+    /// 디스크에서 불러온 결과를 아직 다시 훑지 않고 보여주고 있는지.
     private(set) var spaceResultsFromDisk = false
     private let spaceStore = SpaceStore(fileURL: DiagnosticsModel.supportDir.appending(path: "space.json"))
-    /// 재본 크기를 다음 스캔까지 기억한다 — 바뀌지 않은 것을 다시 재지 않는다.
+    /// 재본 크기를 다음 스캔까지 기억해, 바뀌지 않은 것을 다시 재지 않는다.
     private let sizeCacheURL = DiagnosticsModel.supportDir.appending(path: "sizes.json")
-    /// 지금 디스크가 얼마나 차 있는지. 비울 수 있는 양(74GB 등)만 보여주면 그게
-    /// 큰 값인지 감이 오지 않는다 — 여유 공간 옆에 놓아야 비교가 된다.
+    /// 지금 디스크가 얼마나 차 있는지. 비울 수 있는 양은 여유 공간 옆에 놓아야
+    /// 크기 감이 온다.
     private(set) var diskSpace: DiskSpace?
-    /// purgeable 공간의 주범(로컬 스냅샷) 개수 — 팝오버를 열 때 갱신.
+    /// purgeable 공간의 주범인 로컬 스냅샷 개수. 팝오버를 열 때 갱신한다.
     private(set) var localSnapshotCount = 0
     private let diskProbe = DiskSpaceProbe()
 
-    /// 디스크 여유 부족 감시. 판정(스팸 방지 규칙)은 DiskAlertJudge가 담당하고,
-    /// 여기서는 30초 샘플링 루프에서 값싼 프로브만 물린다.
+    /// 디스크 여유 부족 감시. 스팸 방지 판정은 DiskAlertJudge가 맡는다.
     private var diskAlertJudge: DiskAlertJudge?
     private var diskAlertThresholdBytes: UInt64 = 0
 
-    /// 사용자 도메인 상주 에이전트(~/Library/LaunchAgents). 팝오버를 열 때 갱신.
-    /// 진실 소스는 launchd(print-disabled/print)라 앱은 상태를 따로 기록하지 않는다.
-    /// 화면 언어. 값이 바뀌면 이걸 읽는 뷰가 새 로케일로 다시 그려진다 —
+    /// 화면 언어. 값이 바뀌면 이걸 읽는 뷰가 새 로케일로 다시 그려진다.
     /// SwiftUI의 Text(LocalizedStringKey)는 environment의 locale을 보기 때문이다.
     private(set) var languageCode: String?
 
     func setLanguage(_ language: AppLanguage) {
         languageCode = language == .system ? nil : language.rawValue
-        // 이미 만들어 둔 결과 문구는 옛 언어로 얼어붙어 있다 — 다시 만들 수
-        // 없으니 치운다. 그 자리에서 읽는 한 줄이라 사라져도 잃는 것이 없다.
+        // 이미 만들어 둔 결과 문구는 옛 언어로 굳어 있고 다시 만들 수 없어 치운다.
         spaceNote = nil
     }
 
+    /// 사용자 도메인 상주 에이전트(~/Library/LaunchAgents). 진실 소스는 launchd라
+    /// 앱은 상태를 따로 기록하지 않는다.
     private(set) var launchAgents: [LaunchAgent] = []
-    /// 로그인 항목을 한 번이라도 읽었는지. 팝오버를 연 직후에는 아직 조회 중이라
-    /// 목록이 빈데, 그걸 "없어요"라고 단정하면 거짓이 된다(감사에서 확인).
+    /// 로그인 항목을 한 번이라도 읽었는지. 조회 전의 빈 목록을 "없어요"라고
+    /// 단정하면 거짓이 된다.
     private(set) var launchAgentsLoaded = false
     /// 부팅·로그인할 때 올라오는 항목 전체(시스템 도메인 포함, 읽기 전용).
-    /// 끄고 켜는 것은 여전히 사용자 도메인에서만 한다 — 안전 경계는 그대로다.
+    /// 끄고 켜는 것은 사용자 도메인에서만 한다.
     private(set) var startupItems: [StartupItem] = []
     private let launchAgentManager = LaunchAgentManager()
 
-    /// 팝오버가 닫혀 있는 동안 스캔이 끝났고, 아직 공간 탭을 보지 않았는지.
-    /// 배너 알림(안정 서명으로 동작)과 별개로, 메뉴바 아이콘도 이걸로 강조해
-    /// 배너를 놓쳤거나 꺼 둔 사용자에게 이중 안전망이 된다.
+    /// 팝오버가 닫혀 있는 동안 스캔이 끝났고 아직 공간 탭을 보지 않았는지.
+    /// 배너를 놓쳤거나 꺼 둔 사용자를 위해 메뉴바 아이콘도 이걸로 강조한다.
     private(set) var spaceResultUnseen = false
-    /// `startLiveRefresh`/`stopLiveRefresh`가 팝오버 표시 여부의 근사치로 쓰인다 —
-    /// 팝오버가 열려 있는 동안만 1초 갱신이 돌기 때문이다. 보고 있는 사람에게
-    /// 완료음은 불필요하므로, 팝오버가 닫혀 있을 때만 소리를 울린다.
+    /// 팝오버가 열려 있는지의 근사치. 보고 있는 사람에게 알림과 완료음은 소음이라
+    /// 닫혀 있을 때만 울린다.
     private(set) var isPopoverOpen = false
 
-    /// 창은 닫혔는데 아직 돌고 있는 개발 프로세스. 이 앱이 찾아내는 "숨은 것" 절반이다.
+    /// 창은 닫혔는데 아직 돌고 있는 개발 프로세스.
     private(set) var residueGroups: [ResidueGroup] = []
 
     private var samplingTask: Task<Void, Never>?
     private var liveTask: Task<Void, Never>?
     private var previousCPUTimes: [ProcIdentity: UInt64] = [:]
     private var previousObservedAt: Date?
-    /// 마지막으로 프로세스를 훑은 시각 — 닫혀 있을 때 주기를 늦추는 데 쓴다.
+    /// 마지막으로 프로세스를 훑은 시각. 닫혀 있을 때 주기를 늦추는 데 쓴다.
     private var lastProcessSampleAt: Date?
-    /// 마지막 30초 정밀 샘플링 결과. 1초 가벼운 갱신은 이 값을 그대로 재사용해서
-    /// ProcessSampler(argv·cwd·fd 훑기)를 다시 돌리지 않는다.
+    /// 마지막 정밀 샘플링 결과. 가벼운 갱신은 이 값을 재사용해 ProcessSampler를
+    /// 다시 돌리지 않는다.
     private var lastSamples: [ProcessSample] = []
 
-    /// 메뉴바 라벨은 반드시 순수 Image여야 한다(아래 설명 참고). 그래서 표시할 심볼 이름은
-    /// 모델이 계산해 주고, 샘플링 시작은 AppDelegate가 맡는다. 심볼은 디스크다 —
-    /// 이 앱이 지켜보는 것이 메모리가 아니라 저장 공간이기 때문이다.
+    /// 메뉴바에 띄울 심볼 이름.
     var menuBarSymbolName: String {
         spaceResultUnseen ? "internaldrive.fill" : "internaldrive"
     }
 
-    /// 앱 전체가 공유하는 인스턴스. AppDelegate가 실행 직후 샘플링을 시작하고,
-    /// 화면은 같은 인스턴스를 읽는다.
+    /// 앱 전체가 공유하는 인스턴스.
     static let shared = DiagnosticsModel()
 
     static let supportDir = FileManager.default.homeDirectoryForCurrentUser
@@ -142,14 +126,10 @@ final class DiagnosticsModel {
         try? FileManager.default.createDirectory(at: Self.supportDir,
                                                  withIntermediateDirectories: true)
 
-        // 매번 다시 훑지 않게, 지난 스캔 결과를 그대로 먼저 보여준다. 휴지통 이동은
-        // 실행 직전 ReclaimGuard가 재검증하므로 결과가 오래돼도 안전하다.
+        // 매번 다시 훑지 않게 지난 스캔 결과를 먼저 보여준다. 휴지통 이동은 실행
+        // 직전 ReclaimGuard가 재검증하므로 결과가 오래돼도 안전하다.
         if let record = spaceStore.load() {
-            // 문구를 다시 만들어 넣지 않는다 — 화면이 그릴 때 종류·경로로 직접
-            // 만든다(언어를 바꿔도 따라오고, 문구를 고쳐도 옛말이 남지 않는다).
             spaceItems = record.items
-            // 색인 개수는 조회해야 아는 값이라 저장하지 않는다 — 팝오버를 열면
-            // 다시 조회한다(0.37초라 기다릴 일이 없다).
             spaceScanCompletedAt = record.completedAt
             hasScannedSpace = true
             hasEverScanned = true
@@ -169,43 +149,35 @@ final class DiagnosticsModel {
         }
     }
 
-    /// 프로세스를 훑지 않고 넘어갈 수 있는 최대 간격. 팝오버가 닫혀 있으면
-    /// 이만큼에 한 번만 훑는다.
+    /// 팝오버가 닫혀 있을 때 프로세스를 훑는 간격.
     private static let idleSamplingInterval: TimeInterval = 300
 
-    /// 30초마다 도는 한 바퀴. **디스크 확인과 프로세스 훑기를 분리한다.**
+    /// 30초마다 도는 한 바퀴. 디스크 확인과 프로세스 훑기를 분리한다.
     ///
-    /// 프로세스 훑기는 이 맥에서 372ms가 걸리고(프로세스 355개, 실측),
-    /// 그 결과는 정리 탭에서만 쓴다 — 알림에는 쓰이지 않는다. 팝오버가 닫혀
-    /// 있는데 30초마다 372ms를 태우면, 남의 배터리를 갉아먹는 상주 앱을 찾아주는
-    /// 앱이 정작 자기가 그 짓을 하는 셈이다.
-    ///
-    /// 디스크 확인은 7.7ms라 매번 해도 된다(알림이 늦으면 안 되는 쪽이다).
+    /// 프로세스 훑기는 수백 ms가 걸리고 그 결과는 정리 탭에서만 쓴다. 팝오버가
+    /// 닫혀 있는데 30초마다 태우면 이 앱이 잡으려는 배터리 낭비를 스스로 하게 된다.
+    /// 디스크 확인은 값싸고 알림이 늦으면 안 되므로 매번 한다.
     private func tick() async {
         await checkDiskThreshold()
 
         let due = lastProcessSampleAt.map {
             Date().timeIntervalSince($0) >= Self.idleSamplingInterval
         } ?? true
-        // 닫혀 있어도 가끔은 훑는다 — 열었을 때 비교할 직전 관측이 없으면
-        // "CPU를 안 쓰고 있다"를 판정할 수 없다(5분 간격이 30초보다 오히려
-        // 정확한 신호가 된다).
+        // 닫혀 있어도 가끔은 훑는다. 열었을 때 비교할 직전 관측이 없으면 CPU를
+        // 쓰고 있는지 판정할 수 없다.
         if isPopoverOpen || due {
             await sampleOnce()
         }
     }
 
-    /// 팝오버를 열 때 한 번 도는 갱신. 1초 루프는 CPU%·부하를 살아 움직이게
-    /// 하려던 것이었고, 새 포지션에서는 초 단위로 변하는 값이 없다 — 열 때
-    /// 스냅샷 하나면 충분하다.
+    /// 팝오버를 열 때 한 번 도는 갱신. 초 단위로 변하는 값이 없어 스냅샷 하나면 된다.
     func startLiveRefresh() {
         isPopoverOpen = true
-        // 결과 한 줄은 닫았다 열어도 남긴다(지우면 실패 보고를 놓친다). 다만
-        // 며칠 전 결과가 새 소식처럼 보이면 안 되니, 오래 묵은 것만 치운다.
+        // 결과 한 줄은 닫았다 열어도 남긴다. 며칠 전 결과가 새 소식처럼 보이면
+        // 안 되니 오래 묵은 것만 치운다.
         if let spaceNoteAt, Date().timeIntervalSince(spaceNoteAt) > 300 {
             spaceNote = nil
         }
-        // 팝오버를 열 때마다 한 번이면 충분하다 — 1초 루프에 넣을 만큼 자주 변하지 않는다.
         diskSpace = diskProbe.snapshot()
         let homeForSnapshots = homePath
         Task { [weak self] in
@@ -223,20 +195,18 @@ final class DiagnosticsModel {
             let items = await Task.detached { StartupInventory().scan() }.value
             self?.startupItems = items
         }
-        // 닫혀 있는 동안에는 5분에 한 번만 훑으므로, 열었을 때 정리 탭이 최대
-        // 5분 낡아 있다 — 보러 온 순간에 한 번 새로 훑는다(372ms).
+        // 닫혀 있는 동안 5분에 한 번만 훑으므로 정리 탭이 최대 5분 낡아 있다.
         Task { [weak self] in await self?.sampleOnce() }
         refreshTrash()
         hasFullDiskAccess = FullDiskAccess.isGranted
         checkForUpdate()
     }
 
-    /// 팝오버를 열 때의 확인 간격. 하루로 두었더니 릴리스 **직전**에 확인이 돌면
-    /// 사용자가 최대 24시간 새 버전을 몰랐다(실제로 그랬다). 6시간으로 줄이고,
-    /// 실행할 때는 간격과 무관하게 한 번 확인한다.
+    /// 팝오버를 열 때의 확인 간격. 하루로 두면 릴리스 직전에 확인이 돌았을 때
+    /// 최대 24시간 새 버전을 모른다.
     private static let updateCheckInterval: TimeInterval = 6 * 3600
 
-    /// 사용자가 직접 누르는 확인. 간격을 무시한다 — 기다릴 이유가 없다.
+    /// 사용자가 직접 누르는 확인. 간격을 무시한다.
     func checkForUpdateNow() { checkForUpdate(force: true) }
 
     private func checkForUpdate(force: Bool = false) {
@@ -259,8 +229,7 @@ final class DiagnosticsModel {
         hasFullDiskAccess = FullDiskAccess.isGranted
     }
 
-    /// 휴지통 크기를 다시 읽는다. 열 때·옮긴 뒤·비운 뒤 세 시점 모두 필요하다 —
-    /// 화면에 남은 옛 숫자는 "이미 비웠나?"라는 혼란을 만든다.
+    /// 휴지통 크기를 다시 읽는다. 열 때·옮긴 뒤·비운 뒤 세 시점 모두 필요하다.
     func refreshTrash() {
         Task { [weak self] in
             let contents = await Trash().inspect()
@@ -268,10 +237,7 @@ final class DiagnosticsModel {
         }
     }
 
-    /// 휴지통을 영구 삭제한다. **화면에서 확인을 받은 뒤에만** 불러야 한다.
-    ///
-    /// 비운 뒤 게이지를 다시 읽어 「여유」가 실제로 늘어난 것을 보여주는 것이
-    /// 이 기능의 핵심이다 — 숫자가 움직이는 걸 봐야 정리했다는 감각이 생긴다.
+    /// 휴지통을 영구 삭제한다. 화면에서 확인을 받은 뒤에만 불러야 한다.
     func emptyTrash() async {
         guard !isEmptyingTrash else { return }
         // 옮기는 중에 비우면 방금 옮긴 것이 확인할 새도 없이 영구 삭제된다.
@@ -294,8 +260,8 @@ final class DiagnosticsModel {
             await notifyResultIfClosed(title: L("휴지통 비우기가 끝났어요"))
             return
         }
-        // 늘어난 여유를 확인할 수 있을 때만 숫자를 말한다. 시스템이 여유를 뒤늦게
-        // 반영하는 경우가 있어(purgeable 회계) 단정하면 거짓말이 된다.
+        // 늘어난 여유를 확인할 수 있을 때만 숫자를 말한다. purgeable 회계 탓에
+        // 시스템이 여유를 뒤늦게 반영하는 경우가 있다.
         let gained = (diskSpace?.free).flatMap { after in
             freeBefore.map { before in after > before ? after - before : 0 }
         } ?? 0
@@ -309,7 +275,6 @@ final class DiagnosticsModel {
     }
 
     /// 작업이 끝났는데 팝오버가 닫혀 있으면 결과 한 줄을 알림으로 배달한다.
-    /// 열려 있으면 화면의 spaceNote가 보이므로 알림은 소음이다.
     private func notifyResultIfClosed(title: String) async {
         guard !isPopoverOpen, let note = spaceNote else { return }
         await notifier.notify(title: title, body: note.text)
@@ -317,14 +282,13 @@ final class DiagnosticsModel {
 
     func stopLiveRefresh() {
         isPopoverOpen = false
-        // 결과 한 줄은 여기서 지우지 않는다 — 초점만 잃어도 닫히는 팝오버라,
-        // 닫을 때 지우면 결과를 읽을 기회 자체가 사라진다. 다시 열 때
-        // 오래 묵은 것만 치운다(startLiveRefresh).
+        // 결과 한 줄은 여기서 지우지 않는다. 초점만 잃어도 닫히는 팝오버라 닫을 때
+        // 지우면 결과를 읽을 기회가 사라진다. 정리는 startLiveRefresh가 맡는다.
         liveTask?.cancel()
         liveTask = nil
     }
 
-    /// 스캔 중 도착한 항목을 목록에 끼워 넣는다. 화면 순서(종류 → 크기)를 그대로
+    /// 스캔 중 도착한 항목을 목록에 끼워 넣는다. 화면 순서(종류 → 크기)를
     /// 유지해야 항목이 튀어 오르지 않는다.
     private func appendScannedItem(_ item: ReclaimItem) {
         spaceItems.append(item)
@@ -337,14 +301,12 @@ final class DiagnosticsModel {
         }
     }
 
-    /// 공간 탭이 화면에 나타났을 때 호출한다 — 확인하지 않은 결과 표시를 지운다.
+    /// 공간 탭이 화면에 나타났을 때 호출한다. 확인하지 않은 결과 표시를 지운다.
     func markSpaceResultsSeen() {
         spaceResultUnseen = false
     }
 
-    /// 30초마다 도는 수집. 새 포지션에서 필요한 것은 두 가지뿐이다:
-    /// **창 없이 남아 있는 개발 프로세스**를 찾고, **디스크 여유**를 지켜보는 것.
-    /// CPU·메모리 진단은 이 앱의 일이 아니게 되어 걷어냈다.
+    /// 창 없이 남아 있는 개발 프로세스를 찾는 수집 한 바퀴.
     func sampleOnce() async {
         lastProcessSampleAt = Date()
         let collected = await Self.collect()
@@ -369,9 +331,8 @@ final class DiagnosticsModel {
 
     }
 
-    /// 디스크 여유가 임계치 아래로 떨어지면, 스캔 결과가 낡았을 때 저우선순위로
-    /// 조용히 다시 훑은 뒤 "여유 N — M 비울 수 있어요" 배너 하나로 알린다.
-    /// 사용자가 신경 쓰기 전에 앱이 먼저 아는 것이 목적이다.
+    /// 디스크 여유가 임계치 아래로 떨어지면, 결과가 낡았을 때 조용히 다시 훑고
+    /// 배너 하나로 알린다.
     private func checkDiskThreshold() async {
         guard let snapshot = diskProbe.snapshot() else { return }
         diskSpace = snapshot
@@ -380,11 +341,11 @@ final class DiagnosticsModel {
             return
         }
         // defaults write로 큰 값이 들어오면 << 가 상위 비트를 버리고 이후 덧셈이
-        // 오버플로 트랩을 낸다 — 물리적으로 의미 있는 범위로 조인다.
+        // 오버플로 트랩을 낸다. 물리적으로 의미 있는 범위로 조인다.
         let thresholdGB = (UserDefaults.standard.object(forKey: "diskAlertThresholdGB") as? Int) ?? 20
         let threshold = UInt64(min(max(1, thresholdGB), 100_000)) << 30
         if diskAlertJudge == nil || diskAlertThresholdBytes != threshold {
-            // 마지막 알림 시각을 이월한다 — 새로 만들면 임계치를 한 칸 움직일
+            // 마지막 알림 시각을 이월한다. 새로 만들면 임계치를 한 칸 움직일
             // 때마다, 앱을 켤 때마다 즉시 또 알리게 된다.
             let carried = diskAlertJudge?.lastAlertAt
                 ?? UserDefaults.standard.object(forKey: "diskAlertLastAt") as? Date
@@ -403,17 +364,15 @@ final class DiagnosticsModel {
         let stale = spaceScanCompletedAt.map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true
         let scanningAlready = isScanningSpace
 
-        // **알림을 스캔 뒤로 미루지 않는다.** 예전에는 여기서 전체 스캔을 기다린
-        // 뒤에 알렸는데, 콜드 스캔이 160초이고 저우선순위면 더 걸린다(디스크가
-        // 3.5배 스로틀된다) — "공간이 부족해요"는 몇 분 늦으면 쓸모가 없다.
-        // 게다가 이 함수는 30초 샘플링 루프 안에서 불리므로, 기다리는 동안
-        // 프로세스 관찰까지 통째로 멈춰 있었다.
+        // 알림을 스캔 뒤로 미루지 않는다. 저우선순위 콜드 스캔은 몇 분이 걸리는데
+        // "공간이 부족해요"는 그만큼 늦으면 쓸모가 없고, 이 함수는 샘플링 루프
+        // 안에서 불려서 기다리는 동안 프로세스 관찰까지 멈춘다.
         if stale && !scanningAlready {
             Task { [weak self] in await self?.scanSpace(lowPriority: true, quiet: true) }
         }
 
-        // 낡은 숫자를 사실처럼 말하지 않는다 — 확인 중이라고 말하고, 결과는
-        // 메뉴바 아이콘이 알려준다(조용한 스캔이 끝나면 표시가 바뀐다).
+        // 낡은 숫자를 사실처럼 말하지 않는다. 확인 중이라고 말하고, 결과는
+        // 조용한 스캔이 끝날 때 메뉴바 아이콘이 알려준다.
         let body: String
         if stale || scanningAlready {
             body = L("지금 무엇을 비울 수 있는지 확인하는 중이에요")
@@ -433,7 +392,7 @@ final class DiagnosticsModel {
 
 
     /// 상주 에이전트를 끄거나(bootout+disable) 되돌린다(enable+bootstrap).
-    /// 성공 판정은 launchctl 상태 재조회 — rc=0을 증거로 쓰지 않는다.
+    /// 성공 판정은 launchctl 상태 재조회로 한다. rc=0은 증거가 되지 않는다.
     func toggleLaunchAgent(_ agent: LaunchAgent) async -> UserNote {
         let manager = launchAgentManager
         let ok = await Task.detached {
@@ -450,10 +409,8 @@ final class DiagnosticsModel {
                   : .fail(L("%@ — 끄지 못했어요", name))
     }
 
-    /// 그룹 정리 실행 + 실제 회수량 측정 (설계 §7)
-    /// 창은 닫혔는데 남아 있는 개발 프로세스를 끝낸다. 회수량은 재지 않는다 —
-    /// 이 앱의 가치는 "숨어 있던 것을 찾아 치웠다"이고, 메모리 숫자를 덧붙이면
-    /// 성능 도구처럼 읽힌다(그리고 그 숫자는 잡음과 구분하기 어려웠다).
+    /// 창은 닫혔는데 남아 있는 개발 프로세스를 끝낸다. 회수한 메모리는 재지 않는다.
+    /// 잡음과 구분하기 어려운 숫자이고, 이 앱을 성능 도구처럼 읽히게 만든다.
     func reap(_ group: ResidueGroup) async -> UserNote {
         guard !isReaping else { return .fail(L("정리가 이미 진행 중이에요")) }
         isReaping = true
@@ -465,7 +422,7 @@ final class DiagnosticsModel {
             let result = await reaper.reap(candidate.sample.identity)
             if result == .terminated || result == .killed { terminated += 1 }
         }
-        await sampleOnce()   // 목록 즉시 갱신
+        await sampleOnce()
         guard terminated > 0 else {
             return .fail(L("정리하지 못했어요 — 프로세스가 이미 바뀌었을 수 있어요"))
         }
@@ -482,7 +439,7 @@ final class DiagnosticsModel {
         (UserDefaults.standard.object(forKey: "staleDays") as? Int) ?? Self.defaultStaleDays
     }
 
-    /// 큰 파일로 볼 기준(GB). 무엇을 크다고 볼지는 사람마다 다르다.
+    /// 큰 파일로 볼 기준(MB).
     var largeFileMB: Int { UserSettings.largeFileMB }
 
     /// 사용자 파일(설치 파일·스크린샷·큰 파일)도 찾을지.
@@ -490,13 +447,11 @@ final class DiagnosticsModel {
         (UserDefaults.standard.object(forKey: "includeUserFiles") as? Bool) ?? true
     }
 
-    /// 스캔할 프로젝트 루트. 설정에서 직접 지정할 수 있다 — 기본 목록만 믿으면
-    /// ~/code 같은 폴더를 쓰는 사람은 node_modules가 하나도 안 잡히는 이유를
-    /// 알 길이 없다(검수에서 확인). 비워 두면 기본 후보를 쓴다.
+    /// 설정에서 프로젝트 루트를 비워 뒀을 때 쓰는 기본 후보.
     static let defaultProjectRootNames = ["workspace", "Developer", "src", "Projects"]
 
-    /// 설정의 "보호할 프로젝트 경로" — 프로세스 탐지와 **공간 정리 가드 양쪽**에
-    /// 같은 값을 넘긴다. 한쪽만 반영하면 설정이 거짓말을 하게 된다.
+    /// 설정의 "보호할 프로젝트 경로". 프로세스 탐지와 공간 정리 가드 양쪽에 같은
+    /// 값을 넘긴다. 한쪽만 반영하면 설정이 거짓말을 하게 된다.
     private var protectedPaths: [String] {
         (UserDefaults.standard.stringArray(forKey: "protectedPaths") ?? [])
             .map { ($0 as NSString).expandingTildeInPath }
@@ -515,9 +470,8 @@ final class DiagnosticsModel {
         let candidates = custom.isEmpty
             ? Self.defaultProjectRootNames.map { "\(homePath)/\($0)" }
             : custom
-        // 홈 밖은 거부한다 — `/`나 네트워크 마운트를 적으면 스캔이 끝나지 않고
-        // 남의 파일까지 훑는다. 중첩·중복 루트도 접어야 같은 항목이 두 번 잡히지
-        // 않는다(같은 node_modules가 두 줄로 뜨고 합계가 이중 계산된다).
+        // 홈 밖은 거부한다. `/`나 네트워크 마운트를 적으면 스캔이 끝나지 않는다.
+        // 중첩·중복 루트도 접어야 같은 항목이 두 줄로 뜨고 합계가 이중 계산되지 않는다.
         let underHome = candidates
             .map { ($0 as NSString).standardizingPath }
             .filter { $0.lowercased() == homePath.lowercased()
@@ -532,11 +486,10 @@ final class DiagnosticsModel {
         return kept
     }
 
-    /// 캐시·오래된 node_modules·사용자 파일을 훑는다. 수십 초가
-    /// 걸리므로(du를 항목마다 실행) 30초 샘플링 루프에는 넣지 않는다 — 사용자가
-    /// [찾아보기]를 눌렀을 때(정상 우선순위), 또는 디스크 임계치 감시가 결과를
-    /// 갱신해야 할 때(lowPriority+quiet: 자식 du/find를 Darwin BG로 내리고
-    /// 완료 배너·소리를 내지 않는다 — 임계치 배너가 그 자리를 대신한다)만 돈다.
+    /// 캐시·오래된 node_modules·사용자 파일을 훑는다. 항목마다 du를 돌려 수십 초가
+    /// 걸리므로 샘플링 루프에 넣지 않고, 사용자가 눌렀을 때나 디스크 임계치 감시가
+    /// 결과를 갱신할 때만 돈다. lowPriority는 자식 프로세스를 Darwin BG로 내리고,
+    /// quiet은 임계치 배너가 대신하므로 완료 배너와 소리를 내지 않는다.
     func scanSpace(lowPriority: Bool = false, quiet: Bool = false) async {
         guard !isScanningSpace else { return }
         isScanningSpace = true
@@ -550,8 +503,8 @@ final class DiagnosticsModel {
         let home = homePath
         let roots = projectRoots
 
-        // 스캔 중에는 목록을 비우고 도착하는 대로 채운다 — 140초를 기다린 뒤
-        // 한꺼번에 보여주면 그동안 사용자가 볼 것이 없다(실측).
+        // 스캔 중에는 목록을 비우고 도착하는 대로 채운다. 끝까지 기다렸다 한꺼번에
+        // 보여주면 몇 분 동안 볼 것이 없다.
         spaceItems = []
         if !hasEverScanned {
             hasEverScanned = true
@@ -584,9 +537,8 @@ final class DiagnosticsModel {
         spaceStore.save(SpaceScanRecord(items: spaceItems, completedAt: completedAt))
         saveSizeCache(measured: scanReport.measured)
 
-        // 보고 있는 사람에게 완료 알림은 불필요하다 — 팝오버가 닫혀 있을 때만
-        // 배너(Apple Development 서명 빌드에서 동작 확인)와 완료음으로 알린다.
-        // 배너가 거부돼 있으면 Notifier가 폴백(메뉴바 아이콘 강조)을 세운다.
+        // 보고 있는 사람에게 완료 알림은 소음이라 닫혀 있을 때만 알린다. 배너가
+        // 거부돼 있으면 Notifier가 메뉴바 아이콘 강조로 대신한다.
         guard !isPopoverOpen else { return }
         spaceResultUnseen = true
         guard !quiet else { return }
@@ -607,7 +559,7 @@ final class DiagnosticsModel {
         return cache
     }
 
-    /// 이번에 **실제로 재본 것만** 더한다. 재사용한 값은 이미 들어 있다.
+    /// 이번에 실제로 재본 것만 더한다. 재사용한 값은 이미 들어 있다.
     private func saveSizeCache(measured: [String: UInt64]) {
         guard !measured.isEmpty else { return }
         var cache = loadSizeCache()
@@ -616,20 +568,18 @@ final class DiagnosticsModel {
         JSONFileStore.update(at: sizeCacheURL, default: cache) { $0 = cache }
     }
 
-    /// 새 버전을 내려받아 교체하고 다시 시작한다.
-    ///
-    /// 서명(팀 ID)·공증·버전을 모두 확인한 뒤에만 교체한다 — 확인할 수 없는 것은
-    /// 설치하지 않는다. 옛 버전은 지우지 않고 휴지통으로 보낸다.
+    /// 새 버전을 내려받아 교체하고 다시 시작한다. 서명(팀 ID)·공증·버전을 모두
+    /// 확인한 뒤에만 교체하고, 옛 버전은 지우지 않고 휴지통으로 보낸다.
     func installUpdate() async {
         guard let update = availableUpdate, updateProgress == nil else { return }
-        // 업데이트는 앱을 교체하고 다시 시작한다. 파일을 옮기거나 지우는 중에
-        // 프로세스가 죽으면 사용자는 무엇이 끝났고 무엇이 안 끝났는지 알 수 없다.
+        // 파일을 옮기거나 지우는 중에 프로세스가 죽으면 사용자는 무엇이 끝났고
+        // 무엇이 안 끝났는지 알 수 없다.
         guard !isMovingToTrash, !isEmptyingTrash else {
             updateNote = .fail(L("정리가 끝난 뒤에 업데이트해주세요"))
             return
         }
         guard let dmg = update.downloadURL else {
-            // 받을 파일을 모르면 페이지를 열어준다 — 손으로 받는 길은 남긴다.
+            // 받을 파일을 모르면 손으로 받을 수 있게 페이지를 열어준다.
             NSWorkspace.shared.open(update.pageURL)
             return
         }
@@ -658,7 +608,7 @@ final class DiagnosticsModel {
         }
     }
 
-    /// 교체한 뒤 새 인스턴스를 띄우고 자신을 끝낸다.
+    /// 새 인스턴스를 띄운 뒤에 자신을 끝낸다.
     private func restartForUpdate() {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = true
@@ -668,13 +618,11 @@ final class DiagnosticsModel {
         }
     }
 
-    /// 선택한 항목만 휴지통으로 옮긴다 — 삭제하지 않는다. 결과는 사람 말로 `spaceNote`에.
-    /// 재스캔하지 않는다: 옮긴 직후 60~90초짜리 전체 스캔이 돌면 결과 화면이 통째로
-    /// "훑는 중"으로 바뀌어 옮기기가 오래 걸리는 것처럼 보인다(검수에서 확인).
-    /// 옮겨진 항목만 목록에서 빼고, 나머지는 그대로 둔다.
+    /// 선택한 항목만 휴지통으로 옮긴다. 옮긴 것만 목록에서 빼고 재스캔은 하지
+    /// 않는다. 여기서 전체 스캔이 돌면 화면이 통째로 "훑는 중"으로 바뀐다.
     func moveToTrash(_ items: [ReclaimItem]) async {
         guard !isMovingToTrash else { return }
-        // 빈 선택은 실패가 아니다 — "옮기지 못했어요"라고 하면 거짓 경고가 된다.
+        // 빈 선택은 실패가 아니다. "옮기지 못했어요"라고 하면 거짓 경고가 된다.
         guard !items.isEmpty else {
             spaceNote = .fail(L("먼저 비울 항목을 골라주세요"))
             return
@@ -701,16 +649,12 @@ final class DiagnosticsModel {
             spaceNote = .ok(note)
             hasMovedToTrash = true
         }
-        // 옮기는 동안 팝오버가 닫혔으면(초점만 잃어도 닫힌다) 결과 한 줄을 볼
-        // 수 없다 — 그때는 알림으로 배달한다.
         await notifyResultIfClosed(title: L("휴지통으로 옮기기가 끝났어요"))
 
-        // 누적 성과에는 **실측된 값만** 넣는다 — 재측정에 실패한 값이 섞이면
-        // "지금까지 N GB 비움"이 추정치가 되어 이 앱의 원칙과 어긋난다.
-        // 방금 옮긴 만큼 휴지통이 커졌다 — 그 자리에서 "비우기"를 권할 수 있어야 한다.
+        // 방금 옮긴 만큼 휴지통이 커졌다. 그 자리에서 비우기를 권할 수 있어야 한다.
         refreshTrash()
 
-        // "이미 없는 경로"는 다시 눌러도 같은 실패다 — 목록에서 뺀다. 문구를 비교하면
+        // 이미 없는 경로는 다시 눌러도 같은 실패라 목록에서 뺀다. 문구를 비교하면
         // 번역된 언어에서 매칭이 깨지므로 Reclaimer가 구조로 알려준 목록을 쓴다.
         let goneAnyway = Set(result.alreadyGone)
         let untouched = Set(result.refused.map(\.path)
@@ -723,8 +667,7 @@ final class DiagnosticsModel {
         diskSpace = diskProbe.snapshot()
     }
 
-    /// 거부 이유를 사람 말로. 실행기(Reclaimer)가 재검증에서 거른 항목이 왜
-    /// 건너뛰어졌는지 최소한 대표 하나는 설명해야 한다.
+    /// Reclaimer가 재검증에서 거른 이유를 사람 말로 옮긴다.
     private func refusalText(_ reason: ReclaimRefusal) -> String {
         switch reason {
         case .outsideAllowedRoots: L("허용된 경로 밖이에요")
@@ -741,9 +684,8 @@ final class DiagnosticsModel {
 
 
 
-    /// 잔여 프로세스 판정에 필요한 것만 뜬다. same-uid 샘플과 **전 uid 조상 맵**이
-    /// 둘 다 필요하다 — 조상 맵을 same-uid 샘플로 만들면 root 소유 조상에서 끊겨
-    /// fail-closed 판정이 오작동한다(ResidueDetector 주석 참고).
+    /// same-uid 샘플과 전 uid 조상 맵이 둘 다 필요하다. 조상 맵을 same-uid 샘플로
+    /// 만들면 root 소유 조상에서 끊겨 fail-closed 판정이 오작동한다.
     nonisolated static func collect() async -> (samples: [ProcessSample],
                                                 ancestry: [pid_t: AncestorInfo]) {
         let sampler = ProcessSampler()

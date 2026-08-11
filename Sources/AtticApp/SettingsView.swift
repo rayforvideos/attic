@@ -4,9 +4,8 @@ import UserNotifications
 import AtticCore
 
 struct SettingsView: View {
-    /// **L()로 만든 문자열은 locale을 읽지 않는다.** SwiftUI는 환경값을 읽는
-    /// 뷰만 다시 그리므로, 이 선언이 없으면 언어를 바꿨을 때 Text("한글 리터럴")은
-    /// 바뀌는데 L()로 조립한 설명문은 옛 언어로 남는다(사용자 신고).
+    /// L()로 만든 문자열은 locale을 읽지 않는다. 이 선언이 없으면 언어를 바꿔도
+    /// L()로 조립한 문구만 옛 언어로 남는다.
     @Environment(\.locale) private var locale
 
     @Environment(\.appearsActive) private var appearsActive
@@ -40,7 +39,7 @@ struct SettingsView: View {
         UserDefaults.standard.bool(forKey: AppDelegate.showInDockKey)
 
     var body: some View {
-        // 이 값을 읽어야 언어 변경이 이 뷰를 다시 그린다(선언만으로는 부족하다).
+        // 값을 실제로 읽어야 언어 변경이 이 뷰를 다시 그린다.
         let _ = locale
         Form {
             Section {
@@ -49,7 +48,7 @@ struct SettingsView: View {
                 set: { picked in
                     language = picked
                     AppLanguage.apply(picked)
-                    // 모델의 값이 바뀌면 팝오버·설정 창이 새 로케일로 다시 그려진다.
+                    // 모델 값이 바뀌어야 팝오버와 설정 창이 새 로케일로 다시 그려진다.
                     DiagnosticsModel.shared.setLanguage(picked)
                 })) {
                 ForEach(AppLanguage.allCases) { option in
@@ -67,7 +66,7 @@ struct SettingsView: View {
                         loginItemNote = L("등록하지 못했어요 — %@", error.localizedDescription)
                     }
                     launchAtLogin = SMAppService.mainApp.status == .enabled
-                    // 시스템이 승인을 요구하면 토글이 말없이 튕긴다 — 이유를 말해준다.
+                    // 승인이 필요하면 토글이 말없이 되돌아가므로 이유를 알려준다.
                     if SMAppService.mainApp.status == .requiresApproval {
                         loginItemNote = L("시스템 설정 → 로그인 항목에서 승인이 필요해요")
                     }
@@ -151,7 +150,7 @@ struct SettingsView: View {
                                 let notifier = DiagnosticsModel.shared.notifier
                                 await notifier.notify(title: L("알림 테스트"),
                                                       body: L("이 배너가 보이면 정상이에요"))
-                                // 권한이 거부돼 폴백으로 갔으면 "보냈어요"는 거짓이다.
+                                // 폴백으로 갔으면 배너는 안 뜬 것이라 성공이 아니다.
                                 testFailed = notifier.fallbackActive
                                 try? await Task.sleep(for: .seconds(2))
                                 sentTest = false
@@ -165,8 +164,7 @@ struct SettingsView: View {
             }
 
             Section("무엇을 찾을지") {
-                // 폴더마다 묻는 프롬프트를 없애는 유일한 방법이다 — 이미 허용돼
-                // 있으면 이 안내를 보여줄 이유가 없다.
+                // 전체 디스크 접근이 폴더별 프롬프트를 없애는 유일한 방법이다.
                 if !hasFullDiskAccess {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("폴더마다 접근을 묻고 있어요")
@@ -214,9 +212,7 @@ struct SettingsView: View {
                             largeFileMB = value
                             UserDefaults.standard.set(value, forKey: "largeFileMB")
                         })) {
-                        // 1GB부터 시작하면 흔한 동영상·발표자료(300~800MB)가 전부
-                        // 안 보인다. 예전에는 이 목록의 최소값이 1GB여서 코드
-                        // 기본값(300MB)을 화면에서 고를 수조차 없었다.
+                        // 1GB부터 시작하면 흔한 동영상·발표자료(300~800MB)가 안 보인다.
                         Text("200MB 넘는 것").tag(200)
                         Text("500MB 넘는 것").tag(500)
                         ForEach([1, 2, 5, 10], id: \.self) { gb in
@@ -256,16 +252,15 @@ struct SettingsView: View {
         }
         .padding()
         .frame(width: 430)
-        // 사용자가 시스템 설정에서 껐을 수 있다 — 로컬 저장 금지, 매번 status를 읽는다
         .onChange(of: locale) { _, _ in
-            // L()로 만들어 상태에 담아둔 안내는 옛 언어로 얼어붙는다 — 치운다.
+            // L()로 만들어 상태에 담아둔 안내는 옛 언어로 얼어붙으므로 치운다.
             loginItemNote = nil
         }
+        // 사용자가 시스템 설정에서 권한을 바꿨을 수 있다. 저장해 두지 않고
+        // 창이 다시 활성될 때마다 읽는다.
         .onChange(of: appearsActive) { _, active in
             if active {
                 launchAtLogin = SMAppService.mainApp.status == .enabled
-                // 사용자가 시스템 설정에서 방금 허용했을 수 있다 — 창이 다시
-                // 활성될 때 확인한다.
                 hasFullDiskAccess = FullDiskAccess.isGranted
                 Task { await refreshNotifStatus() }
             }
@@ -292,8 +287,8 @@ struct SettingsView: View {
             .notificationSettings().authorizationStatus
     }
 
-    /// 시스템 설정 → 알림 → 이 앱 페이지로 바로 연다(딥링크 실측 확인 2026-08-05).
-    /// 번들 ID는 하드코딩하지 않는다 — ID를 바꾸면 조용히 엉뚱한 페이지가 열린다.
+    /// 시스템 설정 → 알림의 이 앱 페이지로 바로 연다. 번들 ID를 하드코딩하면
+    /// ID가 바뀔 때 조용히 엉뚱한 페이지가 열린다.
     private func openNotificationSettings() {
         let id = Bundle.main.bundleIdentifier ?? "com.sangjunpark.attic"
         NSWorkspace.shared.open(URL(string:
