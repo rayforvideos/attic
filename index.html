@@ -151,6 +151,7 @@
   .btn-primary:hover { background: var(--accent-strong); color: #0b0f14; transform: translateY(-1px); box-shadow: 0 12px 38px rgba(127,178,229,.3); }
   .btn-ghost { border: 1px solid var(--line); color: var(--text); }
   .btn-ghost:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+  .btn:active { transform: translateY(0) scale(.98); }
   .meta { margin-top: 15px; font-size: 13px; color: var(--dimmer); }
   /* 맥이 아닌 기기에서는 받아봐야 쓸 수 없다. 버튼 대신 안내를 보여준다. */
   .not-mac { display: none; }
@@ -249,6 +250,14 @@
     transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
   }
   .card:hover { transform: translateY(-3px); border-color: #2f3a47; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  /* 카드 위에서 마우스를 따라오는 은은한 빛 */
+  .card, .rule { position: relative; }
+  html.anim .card::after, html.anim .rule::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .3s ease;
+    background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), rgba(127,178,229,.13), transparent 65%);
+  }
+  html.anim .card:hover::after, html.anim .rule:hover::after { opacity: 1; }
   .card .ico {
     width: 34px; height: 34px; border-radius: 9px; background: var(--accent-dim);
     display: grid; place-items: center; margin-bottom: 14px;
@@ -744,6 +753,17 @@
       });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
     reveals.forEach(el => io.observe(el));
+  }
+
+  // 카드 위에서 빛이 마우스를 따라온다. 터치 기기는 hover가 없어 어차피 안 보인다.
+  if (canAnimate && window.matchMedia("(hover: hover)").matches) {
+    document.querySelectorAll(".card, .rule").forEach(el => {
+      el.addEventListener("pointermove", e => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", (e.clientX - r.left) + "px");
+        el.style.setProperty("--my", (e.clientY - r.top) + "px");
+      }, { passive: true });
+    });
   }
 
   // 다운로드 버튼이 DMG를 바로 받게 한다.
