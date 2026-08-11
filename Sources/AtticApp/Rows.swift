@@ -8,13 +8,31 @@ struct ResidueRow: View {
     let blocked: Bool
     let onReap: () -> Void
 
+    /// 종료는 되돌릴 수 없다(저장 안 된 작업이 날아간다) — 한 번 더 물어본다.
+    /// 훨씬 회복 가능한 「휴지통 비우기」도 확인을 받는데 SIGKILL이 한 클릭이면
+    /// 확인 비용이 위험과 거꾸로다(감사에서 확인). 별도 창(alert)은 팝오버를
+    /// 닫아버릴 수 있어 같은 자리에서 받는다.
+    @State private var confirming = false
+
     var body: some View {
         MetricRow(symbol: "terminal.fill", symbolTint: Palette.locked,
                   title: (group.projectPath as NSString).lastPathComponent,
                   subtitle: Evidence.sentence(for: group),
-                  value: SizeText.compact(group.totalFootprint),
+                  value: confirming ? "" : SizeText.compact(group.totalFootprint),
                   valueTint: .secondary, subtitleLines: 2) {
-            RowAction(label: "종료", busy: busy, disabled: blocked, action: onReap)
+            if confirming {
+                HStack(spacing: 4) {
+                    Button(L("정말 종료")) { confirming = false; onReap() }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                        .tint(Palette.over)
+                    Button(L("취소")) { confirming = false }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+            } else {
+                RowAction(label: "종료", busy: busy, disabled: blocked) {
+                    confirming = true
+                }
+            }
         }
         .help(detail)
     }

@@ -13,6 +13,9 @@ struct CleanupPane: View {
     let reapingPaths: Set<String>
     let reapBlocked: Bool
     var launchAgents: [LaunchAgent] = []
+    /// 목록을 한 번이라도 읽었는지. 조회가 끝나기 전의 빈 목록을 "없어요"라고
+    /// 단정하지 않기 위해 필요하다.
+    var launchAgentsLoaded: Bool = true
     /// 부팅·로그인 항목 전체(시스템 포함, 읽기 전용).
     var startupItems: [StartupItem] = []
     var togglingAgents: Set<String> = []
@@ -154,8 +157,19 @@ struct CleanupPane: View {
         VStack(alignment: .leading, spacing: 1) {
             Eyebrow(text: "로그인할 때 자동 실행되는 프로그램")
             if launchAgents.isEmpty {
-                EmptyNote(symbol: "checkmark.circle",
-                          text: "자동 실행되도록 등록된 프로그램이 없어요")
+                // 조회가 끝나기 전에는 "없어요"라고 단정하지 않는다 — 빈 목록을
+                // 먼저 보여주면 잘못된 결론을 읽고 탭을 떠난다.
+                if launchAgentsLoaded {
+                    EmptyNote(symbol: "checkmark.circle",
+                              text: "자동 실행되도록 등록된 프로그램이 없어요")
+                } else {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small).scaleEffect(0.6)
+                        Text("자동 실행 목록을 확인하는 중이에요")
+                            .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 7).padding(.vertical, 4)
+                }
             }
             ForEach(launchAgents) { agent in
                 MetricRow(symbol: agent.isDisabled ? "moon.zzz.fill" : "arrow.trianglehead.2.clockwise",

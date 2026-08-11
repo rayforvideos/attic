@@ -23,7 +23,13 @@ final class DiagnosticsModel {
     /// 한 번이라도 훑어봤는지. 뷰가 아니라 모델이 기억해야 한다 — 뷰 로컬 상태로 두면
     /// 탭을 옮겼다 오거나 뷰가 다시 만들어질 때 결과가 있는데도 시작 화면이 뜬다.
     private(set) var hasScannedSpace = false
-    private(set) var spaceNote: UserNote?
+    /// 작업 결과 한 줄. 팝오버는 초점만 잃어도 닫히므로, 닫는다고 지우면 실패
+    /// 보고("N개는 사용 중이라 남았어요")를 다 읽기 전에 잃는다(감사에서 확인)
+    /// — 닫아도 남겨 두고, 오래 묵은 것만 다시 열 때 치운다.
+    private(set) var spaceNote: UserNote? {
+        didSet { spaceNoteAt = spaceNote == nil ? nil : Date() }
+    }
+    private var spaceNoteAt: Date?
     /// 휴지통 내용. nil은 "읽을 수 없음"(전체 디스크 접근 없음)이고 0개와 다르다.
     /// 전체 디스크 접근 여부. 없으면 macOS가 **앱마다 따로** "다른 앱의 데이터에
     /// 접근하려고 합니다"를 묻는다(캐시를 훑으려면 남의 앱 폴더를 봐야 한다).
@@ -88,6 +94,9 @@ final class DiagnosticsModel {
     }
 
     private(set) var launchAgents: [LaunchAgent] = []
+    /// 로그인 항목을 한 번이라도 읽었는지. 팝오버를 연 직후에는 아직 조회 중이라
+    /// 목록이 빈데, 그걸 "없어요"라고 단정하면 거짓이 된다(감사에서 확인).
+    private(set) var launchAgentsLoaded = false
     /// 부팅·로그인할 때 올라오는 항목 전체(시스템 도메인 포함, 읽기 전용).
     /// 끄고 켜는 것은 여전히 사용자 도메인에서만 한다 — 안전 경계는 그대로다.
     private(set) var startupItems: [StartupItem] = []
@@ -191,6 +200,11 @@ final class DiagnosticsModel {
     /// 스냅샷 하나면 충분하다.
     func startLiveRefresh() {
         isPopoverOpen = true
+        // 결과 한 줄은 닫았다 열어도 남긴다(지우면 실패 보고를 놓친다). 다만
+        // 며칠 전 결과가 새 소식처럼 보이면 안 되니, 오래 묵은 것만 치운다.
+        if let spaceNoteAt, Date().timeIntervalSince(spaceNoteAt) > 300 {
+            spaceNote = nil
+        }
         // 팝오버를 열 때마다 한 번이면 충분하다 — 1초 루프에 넣을 만큼 자주 변하지 않는다.
         diskSpace = diskProbe.snapshot()
         let homeForSnapshots = homePath
@@ -203,6 +217,7 @@ final class DiagnosticsModel {
         Task { [weak self, launchAgentManager] in
             let agents = await Task.detached { launchAgentManager.list() }.value
             self?.launchAgents = agents
+            self?.launchAgentsLoaded = true
         }
         Task { [weak self] in
             let items = await Task.detached { StartupInventory().scan() }.value
@@ -276,6 +291,7 @@ final class DiagnosticsModel {
             spaceNote = outcome.failed > 0
                 ? .fail(L("휴지통을 비우지 못했어요 — 사용 중인 파일이 있어요"))
                 : .fail(L("휴지통이 이미 비어 있어요"))
+            await notifyResultIfClosed(title: L("휴지통 비우기가 끝났어요"))
             return
         }
         // 늘어난 여유를 확인할 수 있을 때만 숫자를 말한다. 시스템이 여유를 뒤늦게
@@ -289,12 +305,21 @@ final class DiagnosticsModel {
             ? L("휴지통을 비웠어요 · 여유가 %@ 늘었어요%@",
                 SizeText.compact(gained), leftover)
             : L("휴지통을 비웠어요 · %lld개를 지웠어요%@", Int64(outcome.removed), leftover))
+        await notifyResultIfClosed(title: L("휴지통 비우기가 끝났어요"))
+    }
+
+    /// 작업이 끝났는데 팝오버가 닫혀 있으면 결과 한 줄을 알림으로 배달한다.
+    /// 열려 있으면 화면의 spaceNote가 보이므로 알림은 소음이다.
+    private func notifyResultIfClosed(title: String) async {
+        guard !isPopoverOpen, let note = spaceNote else { return }
+        await notifier.notify(title: title, body: note.text)
     }
 
     func stopLiveRefresh() {
         isPopoverOpen = false
-        // 결과 한 줄은 그 자리에서 읽는 물건이다 — 팝오버를 닫으면 치운다.
-        spaceNote = nil
+        // 결과 한 줄은 여기서 지우지 않는다 — 초점만 잃어도 닫히는 팝오버라,
+        // 닫을 때 지우면 결과를 읽을 기회 자체가 사라진다. 다시 열 때
+        // 오래 묵은 것만 치운다(startLiveRefresh).
         liveTask?.cancel()
         liveTask = nil
     }
@@ -676,6 +701,9 @@ final class DiagnosticsModel {
             spaceNote = .ok(note)
             hasMovedToTrash = true
         }
+        // 옮기는 동안 팝오버가 닫혔으면(초점만 잃어도 닫힌다) 결과 한 줄을 볼
+        // 수 없다 — 그때는 알림으로 배달한다.
+        await notifyResultIfClosed(title: L("휴지통으로 옮기기가 끝났어요"))
 
         // 누적 성과에는 **실측된 값만** 넣는다 — 재측정에 실패한 값이 섞이면
         // "지금까지 N GB 비움"이 추정치가 되어 이 앱의 원칙과 어긋난다.

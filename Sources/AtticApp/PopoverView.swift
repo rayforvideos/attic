@@ -35,6 +35,7 @@ struct PopoverView: View {
             spaceNote: model.spaceNote,
             notificationsUnavailable: model.notifier.fallbackActive,
             launchAgents: model.launchAgents,
+            launchAgentsLoaded: model.launchAgentsLoaded,
             startupItems: model.startupItems,
             togglingAgents: togglingAgents,
             onToggleAgent: { agent in
@@ -73,7 +74,9 @@ struct PopoverView: View {
             onEmptyTrash: { Task { await model.emptyTrash() } },
             onQuit: { NSApp.terminate(nil) },
             onAppearLive: { model.startLiveRefresh() },
-            onDisappearLive: { model.stopLiveRefresh(); reapNote = nil }
+            // reapNote를 여기서 지우지 않는다 — 초점만 잃어도 닫히는 팝오버라,
+            // 닫을 때 지우면 종료·끄기의 결과를 읽을 기회가 사라진다.
+            onDisappearLive: { model.stopLiveRefresh() }
         )
     }
 }
@@ -105,6 +108,7 @@ struct PopoverBody: View {
     let spaceNote: UserNote?
     var notificationsUnavailable: Bool = false
     var launchAgents: [LaunchAgent] = []
+    var launchAgentsLoaded: Bool = true
     var startupItems: [StartupItem] = []
     var togglingAgents: Set<String> = []
     var onToggleAgent: (LaunchAgent) -> Void = { _ in }
@@ -183,6 +187,7 @@ struct PopoverBody: View {
                                     reapingPaths: reapingPaths,
                                     reapBlocked: reapBlocked,
                                     launchAgents: launchAgents,
+                                    launchAgentsLoaded: launchAgentsLoaded,
                                     startupItems: startupItems,
                                     togglingAgents: togglingAgents,
                                     onToggleAgent: onToggleAgent,
@@ -203,6 +208,15 @@ struct PopoverBody: View {
         .frame(width: 386)
         .task { onAppearLive() }
         .onDisappear { onDisappearLive() }
+        // 습관처럼 ⌘R을 누르는 손을 위해: 열 때와 같은 가벼운 재조회(디스크·
+        // 휴지통·로그인 항목·프로세스)를 다시 돈다. 60~90초짜리 전체 스캔은
+        // 여기 걸지 않는다 — 그건 [다시 찾아보기]가 맡는다.
+        .background {
+            Button("", action: onAppearLive)
+                .keyboardShortcut("r", modifiers: .command)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
     }
 
     /// 비울 수 있는 총량. 단위 없는 숫자는 개수처럼 읽힌다("공간 70").
