@@ -138,6 +138,16 @@ struct PopoverBody: View {
     }
 
     @State private var tab: Tab?
+    /// ⌘R 직후 잠깐 "새로 읽었어요"를 보여준다. 재조회는 조용히 끝나서,
+    /// 반응이 없으면 단축키가 고장난 것처럼 보인다(사용자 신고).
+    @State private var refreshFlash = false
+    /// ⌘R을 받는 키 이벤트 모니터. 숨은 버튼 + .keyboardShortcut는 MenuBarExtra
+    /// 창에서 발화하지 않았다(실측 2026-08-11: 스크린샷으로 확인) — 메뉴 키
+    /// 등가 경로를 타는데 메뉴바 앱 창에는 그 경로가 없다. 앱에 배달되는
+    /// keyDown을 직접 받는다.
+    @State private var keyMonitor: Any?
+    /// 이 뷰를 담은 창. 열릴 때 키로 만들어야 키 입력이 여기로 온다.
+    @State private var hostWindow: NSWindow?
     /// 팝오버는 내용 크기로 창을 만든다. ScrollView는 고유 높이가 없어서 상한만 주면
     /// 0으로 붕괴한다(실측: 팝오버가 386×154로 뜨고 내용 영역이 비었다).
     /// 그래서 내용 높이를 재서 그만큼 주고, 길어지면 상한에서 자른다.
@@ -206,16 +216,98 @@ struct PopoverBody: View {
         }
         .padding(13)
         .frame(width: 386)
-        .task { onAppearLive() }
-        .onDisappear { onDisappearLive() }
+        .task {
+            onAppearLive()
+            // 메뉴바 팝오버는 열려도 키 윈도우가 되지 않아, 키 입력이 직전에
+            // 쓰던 앱으로 간다(실측 2026-08-11: HID 수준 ⌘R도 도달하지 않았고
+            // NSApp.activate만으로는 부족했다). 창을 직접 키로 만들어야 ⌘R이
+            // 여기 닿는다. 첫 열림에는 창 핸들이 몇 틱 늦게 잡히므로 잠깐
+            // 기다린다. 팝오버는 바깥을 누르면 닫히면서 초점도 원래 앱으로
+            // 돌아가므로 빼앗는 것이 아니다.
+            for _ in 0..<20 where hostWindow == nil {
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+            guard !Task.isCancelled, let hostWindow else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            hostWindow.makeKey()
+        }
+        .background(WindowGrabber(window: $hostWindow))
         // 습관처럼 ⌘R을 누르는 손을 위해: 열 때와 같은 가벼운 재조회(디스크·
         // 휴지통·로그인 항목·프로세스)를 다시 돈다. 60~90초짜리 전체 스캔은
         // 여기 걸지 않는다 — 그건 [다시 찾아보기]가 맡는다.
-        .background {
-            Button("", action: onAppearLive)
-                .keyboardShortcut("r", modifiers: .command)
-                .opacity(0)
-                .accessibilityHidden(true)
+        .onAppear {
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // 문자 비교만으로는 안 된다: 한글 입력기에서는 R 키가 "ㄱ"으로
+                // 온다(실측 2026-08-11, 로그로 확인). 물리 키(kVK_ANSI_R = 15)를
+                // 먼저 보고, 다른 자판 배열을 위해 문자 비교를 남긴다.
+                guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+                      event.keyCode == 15
+                        || event.charactersIgnoringModifiers?.lowercased() == "r"
+                else { return event }
+                refreshNow()
+                return nil   // 소비한다 — 처리할 곳이 없다는 삑 소리를 막는다
+            }
+        }
+        .onDisappear {
+            onDisappearLive()
+            if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+            keyMonitor = nil
+        }
+        .overlay(alignment: .bottomLeading) {
+            // 재조회가 조용히 끝나서, 이 반응이 없으면 ⌘R이 고장난 것처럼 보인다.
+            // 오른쪽 위는 탭을 가려서 왼쪽 아래에 둔다(설정·종료 버튼 반대편).
+            if refreshFlash {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 10)).foregroundStyle(Palette.apps)
+                    Text("새로 읽었어요").font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(.regularMaterial, in: Capsule())
+                .padding(8)
+                .transition(.opacity)
+            }
+        }
+    }
+
+    /// 이 뷰가 붙은 NSWindow를 잡아 바인딩에 넣는다. MenuBarExtra는 창을 여는
+    /// 공개 API도, 창 핸들을 주는 API도 없다 — 뷰 계층에서 거슬러 올라가는 것이
+    /// 유일한 길이다(상태 항목을 AX로 찾는 AtticApp.swift의 사정과 같다).
+    private struct WindowGrabber: NSViewRepresentable {
+        @Binding var window: NSWindow?
+
+        /// 창에 붙는 순간 핸들만 저장한다. **여기서 activate·makeKey를 부르면
+        /// 안 된다** — 팝오버가 뜨기 전이라 표시 자체가 깨진다(실측 2026-08-11:
+        /// 팝오버가 아예 열리지 않았다). 키로 만드는 것은 .task가 맡는다.
+        final class AttachView: NSView {
+            var onAttach: (NSWindow) -> Void = { _ in }
+            override func viewDidMoveToWindow() {
+                super.viewDidMoveToWindow()
+                if let window { onAttach(window) }
+            }
+        }
+
+        func makeNSView(context: Context) -> AttachView {
+            let view = AttachView()
+            view.onAttach = { attached in
+                Task { @MainActor in window = attached }
+            }
+            return view
+        }
+
+        func updateNSView(_ nsView: AttachView, context: Context) {
+            Task { @MainActor [weak nsView] in window = nsView?.window }
+        }
+    }
+
+    /// ⌘R의 실제 동작: 열 때와 같은 가벼운 재조회 + 잠깐의 시각 반응.
+    private func refreshNow() {
+        onAppearLive()
+        withAnimation(.easeOut(duration: 0.15)) { refreshFlash = true }
+        Task {
+            try? await Task.sleep(for: .seconds(1.4))
+            withAnimation(.easeOut(duration: 0.3)) { refreshFlash = false }
         }
     }
 
