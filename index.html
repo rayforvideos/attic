@@ -99,12 +99,30 @@
 
   /* ── 히어로 ───────────────────────────────────────── */
   .hero { position: relative; padding: 92px 0 20px; text-align: center; }
-  .hero::before {
-    content: ""; position: absolute; inset: -120px 0 auto 50%;
-    width: 900px; height: 620px; transform: translateX(-50%);
-    background: radial-gradient(50% 50% at 50% 50%, rgba(127,178,229,.14), transparent 70%);
-    pointer-events: none;
+  /* 히어로 뒤에서 아주 느리게 떠다니는 빛. 셋이 서로 다른 주기로 움직여서
+     화면이 멈춰 있어도 살아 있어 보인다. */
+  .hero-glow { position: absolute; inset: -140px 0 auto 0; height: 680px; pointer-events: none; }
+  .hero-glow i {
+    position: absolute; border-radius: 50%; will-change: transform;
   }
+  .hero-glow i:nth-child(1) {
+    width: 540px; height: 430px; left: 50%; top: 0; margin-left: -400px;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(127,178,229,.32), transparent 70%);
+    animation: drift-a 26s ease-in-out infinite alternate;
+  }
+  .hero-glow i:nth-child(2) {
+    width: 480px; height: 390px; left: 50%; top: 70px; margin-left: -60px;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(94,143,208,.28), transparent 70%);
+    animation: drift-b 34s ease-in-out infinite alternate;
+  }
+  .hero-glow i:nth-child(3) {
+    width: 400px; height: 330px; left: 50%; top: 150px; margin-left: -200px;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(127,229,210,.16), transparent 70%);
+    animation: drift-c 42s ease-in-out infinite alternate;
+  }
+  @keyframes drift-a { to { transform: translate(60px, 30px) scale(1.08); } }
+  @keyframes drift-b { to { transform: translate(-70px, 45px) scale(1.12); } }
+  @keyframes drift-c { to { transform: translate(50px, -30px) scale(1.05); } }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 7px;
     border: 1px solid var(--line); background: var(--surface);
@@ -117,16 +135,19 @@
     letter-spacing: -.03em; font-weight: 720;
   }
   h1 .grad {
-    background: linear-gradient(180deg, #ffffff 20%, #9fb4c9 100%);
+    background: linear-gradient(100deg, #ffffff 12%, #a9cdf3 38%, #7fb2e5 52%, #a9cdf3 66%, #ffffff 90%);
+    background-size: 220% 100%;
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: grad-flow 9s ease-in-out infinite alternate;
   }
+  @keyframes grad-flow { from { background-position: 0% 0; } to { background-position: 100% 0; } }
   .sub { font-size: 17.5px; color: var(--dim); margin: 0 auto 34px; max-width: 640px; }
   .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn {
     display: inline-flex; align-items: center; gap: 8px; font-weight: 620; font-size: 15.5px;
     padding: 13px 26px; border-radius: 11px; transition: transform .16s ease, box-shadow .2s ease, background .2s ease;
   }
-  .btn-primary { background: var(--accent); color: #0b0f14; box-shadow: 0 8px 30px rgba(127,178,229,.22); }
+  .btn-primary { background: var(--accent); color: #0b0f14; box-shadow: 0 8px 30px rgba(127,178,229,.32); }
   .btn-primary:hover { background: var(--accent-strong); color: #0b0f14; transform: translateY(-1px); box-shadow: 0 12px 38px rgba(127,178,229,.3); }
   .btn-ghost { border: 1px solid var(--line); color: var(--text); }
   .btn-ghost:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
@@ -145,7 +166,7 @@
   .shot-frame { position: relative; margin: 58px auto 0; width: min(420px, 100%); }
   .shot-frame::after {
     content: ""; position: absolute; inset: auto 8% -28px 8%; height: 60px;
-    background: radial-gradient(50% 50% at 50% 0%, rgba(127,178,229,.22), transparent 70%);
+    background: radial-gradient(50% 50% at 50% 0%, rgba(127,178,229,.32), transparent 70%);
     filter: blur(6px); pointer-events: none;
   }
   .shot-frame img {
@@ -251,6 +272,7 @@
   html.anim .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
     .card, .btn { transition: none !important; }
+    .hero-glow i, h1 .grad { animation: none !important; }
     html.anim .reveal { opacity: 1; transform: none; transition: none; }
     html { scroll-behavior: auto; }
   }
@@ -282,6 +304,7 @@
 
 <div class="wrap">
   <div class="hero">
+    <div class="hero-glow" aria-hidden="true"><i></i><i></i><i></i></div>
     <span class="eyebrow reveal">
       <b>macOS</b>
       <span data-ko>개발자 맥에서 특히 많이 나옵니다</span><span data-en>Especially on developer Macs</span>
