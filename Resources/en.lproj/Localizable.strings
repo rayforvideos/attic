@@ -257,4 +257,5 @@
 "정말 종료" = "Really quit";
 "휴지통으로 옮기기가 끝났어요" = "Finished moving to the Trash";
 "휴지통 비우기가 끝났어요" = "Finished emptying the Trash";
+"휴지통을 비우지 못했어요" = "Couldn't empty the Trash";
 "새로 읽었어요" = "Refreshed";
