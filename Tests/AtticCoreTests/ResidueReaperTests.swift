@@ -41,6 +41,20 @@ struct ResidueReaperTests {
         #expect(kill(pid, 0) == 0)   // 자식은 살아 있어야 한다
     }
 
+    @Test func sigkillPermissionFailureIsNotReportedAsTerminated() async throws {
+        // SIGTERM은 성공했지만 SIGKILL이 EPERM으로 실패하는 상황.
+        // 프로세스가 살아 있는데 .terminated(성공)로 집계되면 안 된다.
+        let pid = try Self.spawnSleeper()
+        defer { kill(pid, SIGKILL) }
+        let target = try #require(ProcessSampler().identity(of: pid))
+        let reaper = ResidueReaper(sendSignal: { _, signal in
+            signal == SIGKILL ? EPERM : 0   // 실제 신호는 보내지 않는다
+        })
+        let result = await reaper.reap(target, gracePeriod: .milliseconds(300))
+        #expect(result == .identityMismatch)
+        #expect(kill(pid, 0) == 0)   // 자식은 살아 있어야 한다
+    }
+
     @Test func alreadyDeadIsNotAnError() async throws {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/sh")

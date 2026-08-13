@@ -257,7 +257,10 @@ final class DiagnosticsModel {
             spaceNote = outcome.failed > 0
                 ? .fail(L("휴지통을 비우지 못했어요 — 사용 중인 파일이 있어요"))
                 : .fail(L("휴지통이 이미 비어 있어요"))
-            await notifyResultIfClosed(title: L("휴지통 비우기가 끝났어요"))
+            // 성공 제목으로 실패를 배달하면 제목만 본 사용자가 비워졌다고 믿는다.
+            await notifyResultIfClosed(title: outcome.failed > 0
+                ? L("휴지통을 비우지 못했어요")
+                : L("휴지통이 이미 비어 있어요"))
             return
         }
         // 늘어난 여유를 확인할 수 있을 때만 숫자를 말한다. purgeable 회계 탓에
